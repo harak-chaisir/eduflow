@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<!--
+    Super-admin tenant list. Plugs into the shared sidebar shell.
+    Active nav: 'tenants'
+-->
+<html th:replace="~{fragments/layout :: layout('Tenants', 'All workspaces', 'tenants', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack"
+         th:with="stampClass=${ {'ACTIVE':'stamp--approved','SUSPENDED':'stamp--pending','INACTIVE':'stamp--rejected'} }">
+
+        <div th:if="${successMessage}" class="flash flash--success">
+            <i data-lucide="check-circle-2"></i><span th:text="${successMessage}">Saved.</span>
+        </div>
+        <div th:if="${errorMessage}" class="flash flash--error">
+            <i data-lucide="alert-circle"></i><span th:text="${errorMessage}">Error.</span>
+        </div>
+
+        <div class="page-head">
+            <div><h1 class="page-head__title">Tenants</h1></div>
+            <div class="page-head__actions">
+                <a class="btn btn--primary" href="/tenants/new">
+                    <i data-lucide="plus"></i><span>New tenant</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="card">
+            <div class="card__body">
+                <form method="get" th:action="@{/tenants}" class="toolbar">
+                    <div class="toolbar__search">
+                        <i data-lucide="search"></i>
+                        <input class="input" type="text" name="q" th:value="${searchQ}"
+                               placeholder="Search by name or slug…" />
+                    </div>
+                    <div class="field" style="min-width:170px;">
+                        <select class="select" name="status">
+                            <option value="">All statuses</option>
+                            <option th:each="s : ${statuses}" th:value="${s.name()}"
+                                    th:text="${s}" th:selected="${s == searchStatus}"></option>
+                        </select>
+                    </div>
+                    <div class="field" style="min-width:170px;">
+                        <select class="select" name="plan">
+                            <option value="">All plans</option>
+                            <option th:each="p : ${plans}" th:value="${p.name()}"
+                                    th:text="${p.label()}" th:selected="${p == searchPlan}"></option>
+                        </select>
+                    </div>
+                    <button class="btn btn--primary" type="submit">
+                        <i data-lucide="search"></i><span>Search</span>
+                    </button>
+                    <a class="btn btn--ghost" href="/tenants">Reset</a>
+                </form>
+            </div>
+        </div>
+
+        <p class="page-head__sub">
+            <span th:text="${tenantsPage.totalElements}">0</span> tenant(s) found
+        </p>
+
+        <div th:if="${tenantsPage.totalElements == 0}" class="empty card">
+            <i data-lucide="building-2" style="width:40px;height:40px;opacity:.4;"></i>
+            <p class="empty__title">No tenants found</p>
+            <p>Get started by <a href="/tenants/new">provisioning your first tenant</a>.</p>
+        </div>
+
+        <div class="card" th:unless="${tenantsPage.totalElements == 0}">
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tenant</th>
+                            <th>Plan</th>
+                            <th>Status</th>
+                            <th>Primary contact</th>
+                            <th style="text-align:right;">Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="t : ${tenantsPage.content}">
+                            <td>
+                                <div class="table__primary">
+                                    <span class="avatar avatar--sm"
+                                          th:text="${#strings.substring(t.name,0,1).toUpperCase()}">A</span>
+                                    <div>
+                                        <a class="table__name" th:href="@{/tenants/{id}(id=${t.id})}"
+                                           th:text="${t.name}">Tenant</a>
+                                        <div class="table__sub is-mono" th:text="${t.slug}">slug</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="tag" th:text="${t.plan.label()}">Plan</span></td>
+                            <td>
+                                <span class="stamp" th:classappend="${stampClass.get(t.status.name())}"
+                                      th:text="${t.status}">ACTIVE</span>
+                            </td>
+                            <td>
+                                <div class="table__sub" th:text="${t.primaryContactName != null ? t.primaryContactName : '—'}">—</div>
+                                <div class="table__sub" th:text="${t.primaryContactEmail}">email</div>
+                            </td>
+                            <td style="text-align:right;">
+                                <span class="table__sub"
+                                      th:text="${t.createdAt != null ? #temporals.format(t.createdAt,'yyyy-MM-dd') : '—'}">—</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</th:block>
+</body>
+</html>

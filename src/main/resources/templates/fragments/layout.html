@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en"
+      th:fragment="layout(pageTitle, breadcrumb, activeNav, content)"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${pageTitle} + ' · EduFlow'">EduFlow</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap">
+
+    <!-- Tailwind utilities (build-time generated) + the EduFlow design system -->
+    <link rel="stylesheet" th:href="@{/css/tailwind.css}">
+    <link rel="stylesheet" th:href="@{/css/eduflow.css}">
+
+    <!-- CSRF tokens for HTMX AJAX requests -->
+    <meta name="csrf-token"  th:content="${_csrf.token}">
+    <meta name="csrf-header" th:content="${_csrf.headerName}">
+</head>
+<body>
+<div class="app">
+
+    <!-- ============================ Sidebar ============================ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar__brand">
+            <span class="sidebar__mark" aria-hidden="true">
+                <i data-lucide="graduation-cap"></i>
+            </span>
+            <span>EduFlow</span>
+        </div>
+
+        <nav class="sidebar__nav" aria-label="Primary">
+            <a class="nav-link" th:classappend="${activeNav == 'dashboard'} ? 'is-active'" th:href="@{/}">
+                <i data-lucide="layout-dashboard"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <a class="nav-link" th:classappend="${activeNav == 'students'} ? 'is-active'" th:href="@{/students}">
+                <i data-lucide="users"></i>
+                <span>Students</span>
+            </a>
+
+            <a class="nav-link" th:classappend="${activeNav == 'applications'} ? 'is-active'" href="#">
+                <i data-lucide="file-text"></i>
+                <span>Applications</span>
+            </a>
+
+            <a class="nav-link" sec:authorize="hasAnyRole('VISA_OFFICER','TENANT_ADMIN')"
+               th:classappend="${activeNav == 'visa'} ? 'is-active'" href="#">
+                <i data-lucide="plane"></i>
+                <span>Visa</span>
+            </a>
+
+            <a class="nav-link" th:classappend="${activeNav == 'tasks'} ? 'is-active'" href="#">
+                <i data-lucide="check-square"></i>
+                <span>Tasks</span>
+            </a>
+
+            <div class="sidebar__section-label" sec:authorize="hasAnyRole('TENANT_ADMIN','SUPER_ADMIN')">
+                Administration
+            </div>
+
+            <a class="nav-link" sec:authorize="hasRole('TENANT_ADMIN')"
+               th:classappend="${activeNav == 'staff'} ? 'is-active'" href="#">
+                <i data-lucide="user-cog"></i>
+                <span>Staff</span>
+            </a>
+
+            <a class="nav-link" sec:authorize="hasRole('TENANT_ADMIN')"
+               th:classappend="${activeNav == 'reports'} ? 'is-active'" href="#">
+                <i data-lucide="bar-chart-3"></i>
+                <span>Reports</span>
+            </a>
+
+            <a class="nav-link" sec:authorize="hasRole('TENANT_ADMIN')"
+               th:classappend="${activeNav == 'workspace'} ? 'is-active'" th:href="@{/workspace}">
+                <i data-lucide="settings"></i>
+                <span>Workspace</span>
+            </a>
+
+            <a class="nav-link" sec:authorize="hasRole('SUPER_ADMIN')"
+               th:classappend="${activeNav == 'tenants'} ? 'is-active'" th:href="@{/tenants}">
+                <i data-lucide="building-2"></i>
+                <span>Tenants</span>
+            </a>
+        </nav>
+
+        <div class="sidebar__footer">EduFlow CRM</div>
+    </aside>
+
+    <!-- ============================ Topbar ============================ -->
+    <header class="topbar">
+        <div style="display:flex; align-items:center; gap:16px;">
+            <button class="menu-toggle" type="button" aria-label="Toggle navigation"
+                    data-toggle="sidebar">
+                <i data-lucide="menu"></i>
+            </button>
+            <div class="topbar__title">
+                <h1 th:text="${pageTitle}">Page</h1>
+                <span class="topbar__crumb" th:if="${breadcrumb}" th:text="${breadcrumb}">Breadcrumb</span>
+            </div>
+        </div>
+
+        <div class="topbar__user">
+            <span class="tenant-badge" sec:authorize="isAuthenticated()">
+                <i data-lucide="building-2" class="icon-sm"></i>
+                <span th:text="${#authentication.principal.tenantName}">Your consultancy</span>
+            </span>
+
+            <!-- Account dropdown: identity, workspace settings, sign out -->
+            <div class="user-menu" data-user-menu>
+                <button class="user-menu__trigger" type="button"
+                        data-user-menu-toggle aria-haspopup="true" aria-expanded="false">
+                    <span class="avatar"
+                          th:text="${#strings.toUpperCase(#strings.substring(#authentication.name,0,1))}">U</span>
+                    <span class="user-chip__meta">
+                        <span class="user-chip__name" sec:authentication="name">user</span>
+                        <span class="user-chip__role">Account</span>
+                    </span>
+                    <i data-lucide="chevron-down" class="icon-sm user-menu__caret"></i>
+                </button>
+
+                <div class="user-menu__panel" data-user-menu-panel hidden>
+                    <div class="user-menu__header">
+                        <span class="user-menu__name" sec:authentication="name">user</span>
+                        <span class="user-menu__sub"
+                              th:text="${#authentication.principal.tenantName}">Your consultancy</span>
+                    </div>
+
+                    <a class="user-menu__item"
+                       sec:authorize="hasAnyRole('TENANT_ADMIN','SUPER_ADMIN')"
+                       th:href="@{/workspace}">
+                        <i data-lucide="settings"></i>
+                        <span>Workspace settings</span>
+                    </a>
+
+                    <form class="user-menu__form" th:action="@{/logout}" method="post">
+                        <button class="user-menu__item user-menu__item--danger" type="submit">
+                            <i data-lucide="log-out"></i>
+                            <span>Sign out</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ============================ Content =========================== -->
+    <main class="canvas">
+        <th:block th:replace="${content}">Page content goes here.</th:block>
+    </main>
+</div>
+
+<script th:src="@{/js/htmx.min.js}"></script>
+<script th:src="@{/js/lucide.js}"></script>
+<script th:src="@{/js/eduflow.js}"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+/* EduFlow CRM — Tailwind CSS input file
+ * -------------------------------------------------
+ * This file is processed by the Tailwind CLI during the Maven
+ * generate-resources phase via frontend-maven-plugin.
+ *
+ * Output: src/main/resources/static/css/tailwind.css
+ *
+ * Run manually:  npm run build:css
+ * Watch mode:    npm run watch:css
+ * Maven:         ./mvnw generate-resources
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<!--
+    Student document dossier.
+    Plugs into the shared sidebar shell via fragments/layout. Active nav: 'students'.
+-->
+<html th:replace="~{fragments/layout :: layout(${dossier.studentName} + ' · Documents',
+                                               'Students / ' + ${dossier.studentName} + ' / Documents',
+                                               'students', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="content">
+
+    <!-- Toast area — OOB-swapped by HTMX document actions -->
+    <div id="dossierToast">
+        <div th:if="${successMessage}" class="flash flash--success" role="alert">
+            <i data-lucide="check-circle-2"></i><span th:text="${successMessage}">Saved.</span>
+        </div>
+        <div th:if="${errorMessage}" class="flash flash--error" role="alert">
+            <i data-lucide="alert-circle"></i><span th:text="${errorMessage}">Error.</span>
+        </div>
+    </div>
+
+    <div class="stack"
+         th:with="stamp=${ {'PENDING':'stamp--pending','APPROVED':'stamp--approved','REJECTED':'stamp--rejected','NEEDS_REVISION':'stamp--needs_revision'} }">
+
+        <!-- Header -->
+        <div class="page-head">
+            <div>
+                <a th:href="@{/students/{id}(id=${dossier.studentId})}" class="eyebrow back-link">
+                    <i data-lucide="arrow-left" class="icon-sm"></i><span>Back to student</span>
+                </a>
+                <h1 class="page-head__title" style="margin-top:6px;">Documents</h1>
+                <p class="page-head__sub" th:text="${dossier.studentName}">Student</p>
+            </div>
+            <div class="page-head__actions"
+                 sec:authorize="hasAnyRole('TENANT_ADMIN','COUNSELOR','DOC_OFFICER','VISA_OFFICER','STUDENT')">
+                <button class="btn btn--primary" type="button"
+                        data-upload-open
+                        aria-haspopup="dialog" aria-controls="uploadModal">
+                    <i data-lucide="upload"></i><span>Add document</span>
+                </button>
+            </div>
+        </div>
+
+        <!--
+            dossierContent fragment — swapped by every HTMX document mutation
+            (upload, verify, resubmit, delete).
+        -->
+        <div id="dossierContent"
+             th:fragment="dossierContent"
+             th:with="stamp=${ {'PENDING':'stamp--pending','APPROVED':'stamp--approved','REJECTED':'stamp--rejected','NEEDS_REVISION':'stamp--needs_revision'} }">
+
+            <!-- Readiness + status summary -->
+            <section class="card">
+                <div class="card__body">
+                    <div class="dossier-header">
+                        <div class="readiness" th:classappend="${dossier.readiness.complete()} ? 'readiness--complete'"
+                             role="meter"
+                             th:attr="aria-valuenow=${dossier.readiness.percent},
+                                      aria-valuemin=0,
+                                      aria-valuemax=100,
+                                      aria-label='Dossier readiness: ' + ${dossier.readiness.percent} + '%'">
+                            <div class="readiness__ring" th:style="'--pct:' + ${dossier.readiness.percent}">
+                                <span class="readiness__value" th:text="${dossier.readiness.percent} + '%'" aria-hidden="true">0%</span>
+                            </div>
+                            <div class="readiness__caption">
+                                <strong>Dossier readiness</strong>
+                                <span th:text="${dossier.readiness.requiredApproved} + ' of '
+                                      + ${dossier.readiness.requiredTotal} + ' required documents approved'">
+                                    0 of 4 required documents approved</span>
+                            </div>
+                        </div>
+                        <div class="status-summary">
+                            <span class="status-tally"><strong th:text="${dossier.statusTally.get(T(com.eduflow.document.DocumentStatus).PENDING)}">0</strong> Pending</span>
+                            <span class="status-tally"><strong th:text="${dossier.statusTally.get(T(com.eduflow.document.DocumentStatus).APPROVED)}">0</strong> Approved</span>
+                            <span class="status-tally"><strong th:text="${dossier.statusTally.get(T(com.eduflow.document.DocumentStatus).NEEDS_REVISION)}">0</strong> Needs revision</span>
+                            <span class="status-tally"><strong th:text="${dossier.statusTally.get(T(com.eduflow.document.DocumentStatus).REJECTED)}">0</strong> Rejected</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dossier by category -->
+            <section class="card">
+                <div class="card__header"><span class="card__title">Document checklist</span></div>
+
+                <div class="category" th:each="group : ${dossier.categories}">
+                    <div class="category__head">
+                        <span class="category__name" th:text="${group.label}">Category</span>
+                        <span class="category__count" th:text="${#lists.size(group.rows)} + ' item(s)'">0</span>
+                    </div>
+
+                    <div class="doc-row" th:each="row : ${group.rows}"
+                         th:classappend="${!row.uploaded} ? 'doc-row--placeholder'">
+                        <div class="doc-row__main">
+                            <span class="doc-row__name" th:text="${row.label}">Document</span>
+                            <span class="doc-row__required" th:if="${row.required}">Required</span>
+
+                            <div class="doc-row__meta" th:if="${row.uploaded}">
+                                <span class="is-mono" th:text="${row.document.originalFilename}">file</span>
+                                <span th:if="${row.document.fileSizeBytes != null}"
+                                      th:text="${#numbers.formatDecimal(row.document.fileSizeBytes / 1024.0, 1, 1)} + ' KB'">KB</span>
+                                <span th:if="${row.document.revisionNumber > 1}"
+                                      th:text="'rev ' + ${row.document.revisionNumber}">rev</span>
+                                <span th:if="${row.document.createdAt != null}"
+                                      th:text="'uploaded ' + ${#strings.substring(row.document.createdAt.toString(), 0, 10)}">uploaded</span>
+                                <span th:if="${row.document.verifiedByName != null}"
+                                      th:text="'verified by ' + ${row.document.verifiedByName}">verified by</span>
+                                <span th:if="${row.document.verifiedAt != null}"
+                                      th:text="${#strings.substring(row.document.verifiedAt.toString(), 0, 10)}">date</span>
+                            </div>
+
+                            <div class="doc-row__meta doc-row__meta--danger"
+                                 th:if="${row.uploaded and row.document.rejectionReason != null}">
+                                <i data-lucide="alert-triangle" class="icon-sm" aria-hidden="true"></i>
+                                <span th:text="${row.document.rejectionReason}">reason</span>
+                            </div>
+                        </div>
+
+                        <span th:if="${row.uploaded}" class="stamp"
+                              th:classappend="${stamp.get(row.document.status.name())}"
+                              th:text="${row.document.status.label()}">Pending</span>
+                        <span th:unless="${row.uploaded}" class="stamp stamp--empty">Not uploaded</span>
+
+                        <!-- Actions: placeholder slot -->
+                        <div class="doc-row__actions" th:if="${!row.uploaded}"
+                         sec:authorize="hasAnyRole('TENANT_ADMIN','COUNSELOR','DOC_OFFICER','VISA_OFFICER','STUDENT', 'SUPER_ADMIN')">
+                            <button class="btn btn--primary btn--sm" type="button"
+                                    data-upload-open
+                                    aria-haspopup="dialog" aria-controls="uploadModal"
+                                    th:attr="data-type=${row.type.name()},data-type-label=${row.label}">
+                                <i data-lucide="upload" aria-hidden="true"></i><span>Upload</span>
+                            </button>
+                        </div>
+
+                        <!-- Actions: uploaded document -->
+                        <div class="doc-row__actions" th:if="${row.uploaded}">
+
+                            <a class="btn btn--subtle btn--sm"
+                               th:href="@{/documents/{id}/download(id=${row.document.id})}"
+                               th:attr="aria-label='Download ' + ${row.label}">
+                                <i data-lucide="download" aria-hidden="true"></i><span>Download</span>
+                            </a>
+
+                            <!--
+                                Verify button: opens the verify form loaded via HTMX GET
+                                into the verifyModal placeholder.
+                            -->
+                            <button sec:authorize="hasAnyRole('TENANT_ADMIN','DOC_OFFICER')"
+                                    th:if="${row.document.status.name() == 'PENDING'}"
+                                    class="btn btn--primary btn--sm" type="button"
+                                    th:hx-get="@{/documents/{id}/verify-form(id=${row.document.id})}"
+                                    hx-target="#verifyModal"
+                                    hx-swap="innerHTML"
+                                    th:attr="aria-label='Verify ' + ${row.label}">
+                                <i data-lucide="shield-check" aria-hidden="true"></i><span>Verify</span>
+                            </button>
+
+                            <!-- Re-upload (NEEDS_REVISION) -->
+                            <form sec:authorize="hasAnyRole('TENANT_ADMIN','COUNSELOR','DOC_OFFICER','STUDENT')"
+                                  th:if="${row.document.status.name() == 'NEEDS_REVISION'}"
+                                  th:action="@{/documents/{id}/resubmit(id=${row.document.id})}"
+                                  method="post" enctype="multipart/form-data"
+                                  hx-encoding="multipart/form-data"
+                                  th:hx-post="@{/documents/{id}/resubmit(id=${row.document.id})}"
+                                  hx-target="#dossierContent"
+                                  hx-swap="outerHTML"
+                                  class="file-field">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <label class="btn btn--subtle btn--sm"
+                                       th:attr="aria-label='Re-upload ' + ${row.label}">
+                                    <i data-lucide="rotate-ccw" aria-hidden="true"></i><span>Re-upload</span>
+                                    <input type="file" name="file"
+                                           accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                           data-file-input data-autosubmit hidden />
+                                </label>
+                            </form>
+
+                            <!-- Delete (PENDING or REJECTED) -->
+                            <form sec:authorize="hasAnyRole('TENANT_ADMIN','DOC_OFFICER')"
+                                  th:if="${row.document.status.name() == 'PENDING' or row.document.status.name() == 'REJECTED'}"
+                                  th:action="@{/documents/{id}/delete(id=${row.document.id})}"
+                                  method="post"
+                                  th:hx-post="@{/documents/{id}/delete(id=${row.document.id})}"
+                                  hx-target="#dossierContent"
+                                  hx-swap="outerHTML"
+                                  th:hx-confirm="'Delete this ' + ${row.label} + '? This cannot be undone.'">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <button class="btn btn--ghost btn--sm" type="submit"
+                                        style="color: var(--status-rejected-fg);"
+                                        th:attr="aria-label='Delete ' + ${row.label}">
+                                    <i data-lucide="trash-2" aria-hidden="true"></i><span>Delete</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div><!-- /#dossierContent -->
+    </div>
+
+    <!-- =====================================================================
+         Upload modal
+         Form uses hx-post + hx-encoding for multipart; on success the server
+         swaps #dossierContent and closes the modal via HX-Trigger.
+         ===================================================================== -->
+    <div class="modal-backdrop" id="uploadModal"
+         role="dialog" aria-modal="true" aria-labelledby="uploadModalTitle">
+        <div class="modal">
+            <div class="modal__header">
+                <div class="modal__title" id="uploadModalTitle">Upload document</div>
+                <button class="btn btn--ghost btn--sm" type="button"
+                        data-modal-close aria-label="Close upload dialog">
+                    <i data-lucide="x" aria-hidden="true"></i>
+                </button>
+            </div>
+            <form id="uploadForm" method="post" enctype="multipart/form-data"
+                  th:action="@{/students/{id}/documents/upload(id=${dossier.studentId})}"
+                  hx-encoding="multipart/form-data"
+                  th:hx-post="@{/students/{id}/documents/upload(id=${dossier.studentId})}"
+                  hx-target="#dossierContent"
+                  hx-swap="outerHTML">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <div class="modal__body stack">
+                    <div class="field">
+                        <label class="field__label" for="uploadType">Document type</label>
+                        <select class="select" id="uploadType" name="type" required>
+                            <option th:each="t : ${documentTypes}" th:value="${t.name()}"
+                                    th:text="${t.label()} + (t.coreRequirement ? ' (required)' : '')">Type</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="uploadDescription">Description <span class="field__optional">(optional)</span></label>
+                        <input class="input" type="text" id="uploadDescription" name="description" maxlength="500" />
+                    </div>
+                    <label class="dropzone" data-dropzone>
+                        <input type="file" name="file" id="uploadFile"
+                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                               required hidden />
+                        <i data-lucide="upload-cloud" aria-hidden="true"></i>
+                        <span class="dropzone__primary">Drag &amp; drop a file here, or <strong>browse</strong></span>
+                        <span class="dropzone__hint">PDF, JPG, PNG, DOC up to 10 MB</span>
+                        <span class="dropzone__file" data-upload-filename aria-live="polite">No file selected</span>
+                    </label>
+                </div>
+                <div class="modal__footer">
+                    <button class="btn btn--ghost" type="button" data-modal-close>Cancel</button>
+                    <button class="btn btn--primary" type="submit" data-upload-submit disabled aria-disabled="true">
+                        <i data-lucide="upload" aria-hidden="true"></i><span>Upload</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         Verify modal placeholder — innerHTML is replaced by HTMX GET on
+         each "Verify" button click (/documents/{id}/verify-form).
+         ===================================================================== -->
+    <div class="modal-backdrop" id="verifyModal"
+         sec:authorize="hasAnyRole('TENANT_ADMIN','DOC_OFFICER')"
+         role="dialog" aria-modal="true" aria-labelledby="verifyModalTitle">
+    </div>
+
+</th:block>
+</body>
+</html>

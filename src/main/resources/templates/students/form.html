@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<!--
+    Student register / edit form.
+    Plugs into the shared sidebar shell via fragments/layout.
+    Active nav: 'students'
+-->
+<html th:replace="~{fragments/layout :: layout(${isEdit} ? ('Edit — ' + studentName) : 'Register Student',
+                                               ${isEdit} ? ('Students / Edit / ' + studentName) : 'Students / Register',
+                                               'students', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack" style="max-width: 860px;">
+
+        <!-- Back link -->
+        <a th:href="${isEdit} ? @{/students/{id}(id=${studentId})} : @{/students}"
+           class="eyebrow" style="display:inline-flex; align-items:center; gap:6px;">
+            <i data-lucide="arrow-left" class="icon-sm"></i>
+            <span th:text="${isEdit} ? 'Back to student' : 'Back to students'">Back</span>
+        </a>
+
+        <!-- Page header -->
+        <div class="page-head">
+            <div>
+                <h1 class="page-head__title"
+                    th:text="${isEdit} ? ('Edit ' + studentName) : 'Register new student'">Student form</h1>
+                <p class="page-head__sub"
+                   th:text="${isEdit} ? 'Update the student profile information below.' :
+                                        'Fill in the details below to register a new student lead.'">Subtitle</p>
+            </div>
+        </div>
+
+        <!-- Global error (e.g. duplicate email) -->
+        <div th:if="${errorMessage}" class="flash flash--error">
+            <i data-lucide="alert-circle"></i>
+            <span th:text="${errorMessage}">Error</span>
+        </div>
+
+        <!-- ── Form ──────────────────────────────────────────────────────────── -->
+        <form th:action="${isEdit} ? @{/students/{id}/edit(id=${studentId})} : @{/students/new}"
+              th:object="${studentForm}"
+              method="post"
+              novalidate>
+
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+            <!-- Validation summary: shown whenever any field failed -->
+            <div th:if="${#fields.hasErrors('*')}" class="flash flash--error" style="margin-bottom: var(--space-5);">
+                <i data-lucide="alert-triangle"></i>
+                <span>Please correct the highlighted fields and try again.</span>
+            </div>
+
+            <div class="card">
+
+                <!-- Section 1: Personal details -->
+                <div class="form-section">
+                    <div class="form-section__title">Personal details</div>
+                    <p class="form-section__hint">Basic identifying information for the student.</p>
+
+                    <div class="form-grid">
+                        <div class="field">
+                            <label class="field__label" for="firstName">
+                                First name <span class="required-mark">*</span>
+                            </label>
+                            <input class="input" type="text" id="firstName" th:field="*{firstName}"
+                                   th:classappend="${#fields.hasErrors('firstName')} ? 'is-invalid'"
+                                   maxlength="100" placeholder="e.g. John" />
+                            <span class="field__error" th:if="${#fields.hasErrors('firstName')}"
+                                  th:errors="*{firstName}"></span>
+                        </div>
+
+                        <div class="field">
+                            <label class="field__label" for="lastName">
+                                Last name <span class="required-mark">*</span>
+                            </label>
+                            <input class="input" type="text" id="lastName" th:field="*{lastName}"
+                                   th:classappend="${#fields.hasErrors('lastName')} ? 'is-invalid'"
+                                   maxlength="100" placeholder="e.g. Smith" />
+                            <span class="field__error" th:if="${#fields.hasErrors('lastName')}"
+                                  th:errors="*{lastName}"></span>
+                        </div>
+
+                        <div class="field">
+                            <label class="field__label" for="email">
+                                Email address <span class="required-mark">*</span>
+                            </label>
+                            <input class="input" type="email" id="email" th:field="*{email}"
+                                   th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'"
+                                   maxlength="255" placeholder="e.g. john.smith@example.com" />
+                            <span class="field__error" th:if="${#fields.hasErrors('email')}"
+                                  th:errors="*{email}"></span>
+                        </div>
+
+                        <div class="field">
+                            <label class="field__label" for="phone">Phone</label>
+                            <input class="input" type="tel" id="phone" th:field="*{phone}"
+                                   th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid'"
+                                   pattern="[+]?[0-9\s\-().]{7,30}" maxlength="30"
+                                   placeholder="e.g. +977 98XXXXXXXX" />
+                            <span class="field__error" th:if="${#fields.hasErrors('phone')}"
+                                  th:errors="*{phone}"></span>
+                        </div>
+
+                        <div class="field">
+                            <label class="field__label" for="dateOfBirth">Date of birth</label>
+                            <input class="input" type="date" id="dateOfBirth" th:field="*{dateOfBirth}"
+                                   th:classappend="${#fields.hasErrors('dateOfBirth')} ? 'is-invalid'" />
+                            <span class="field__error" th:if="${#fields.hasErrors('dateOfBirth')}"
+                                  th:errors="*{dateOfBirth}"></span>
+                        </div>
+
+                        <div class="field">
+                            <label class="field__label" for="gender">Gender</label>
+                            <select class="select" id="gender" th:field="*{gender}">
+                                <option value="">Select gender…</option>
+                                <option th:each="g : ${genders}" th:value="${g.name()}" th:text="${g}">MALE</option>
+                            </select>
+                        </div>
+
+                        <div class="field field--span2">
+                            <label class="field__label" for="nationality">Nationality</label>
+                            <input class="input" type="text" id="nationality" th:field="*{nationality}"
+                                   th:classappend="${#fields.hasErrors('nationality')} ? 'is-invalid'"
+                                   maxlength="100" placeholder="e.g. Nepali" />
+                            <span class="field__error" th:if="${#fields.hasErrors('nationality')}"
+                                  th:errors="*{nationality}"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Address -->
+                <div class="form-section">
+                    <div class="form-section__title">Address</div>
+                    <p class="form-section__hint">Where the student is currently based.</p>
+
+                    <div class="form-grid">
+                        <div class="field field--span2">
+                            <label class="field__label" for="addressLine1">Address line 1</label>
+                            <input class="input" type="text" id="addressLine1" th:field="*{addressLine1}"
+                                   th:classappend="${#fields.hasErrors('addressLine1')} ? 'is-invalid'"
+                                   maxlength="255" placeholder="Street, building / house no." />
+                            <span class="field__error" th:if="${#fields.hasErrors('addressLine1')}"
+                                  th:errors="*{addressLine1}"></span>
+                        </div>
+
+                        <div class="field field--span2">
+                            <label class="field__label" for="addressLine2">Address line 2</label>
+                            <input class="input" type="text" id="addressLine2" th:field="*{addressLine2}"
+                                   th:classappend="${#fields.hasErrors('addressLine2')} ? 'is-invalid'"
+                                   maxlength="255" placeholder="Apartment, suite, unit, etc. (optional)" />
+                            <span class="field__error" th:if="${#fields.hasErrors('addressLine2')}"
+                                  th:errors="*{addressLine2}"></span>
+                        </div>
+
+                        <div class="field">
+                            <label class="field__label" for="city">City</label>
+                            <input class="input" type="text" id="city" th:field="*{city}"
+                                   th:classappend="${#fields.hasErrors('city')} ? 'is-invalid'"
+                                   maxlength="100" />
+                            <span class="field__error" th:if="${#fields.hasErrors('city')}"
+                                  th:errors="*{city}"></span>
+                        </div>
+
+                        <div class="field">
+                            <label class="field__label" for="stateProvince">State / province</label>
+                            <input class="input" type="text" id="stateProvince" th:field="*{stateProvince}"
+                                   th:classappend="${#fields.hasErrors('stateProvince')} ? 'is-invalid'"
+                                   maxlength="100" />
+                            <span class="field__error" th:if="${#fields.hasErrors('stateProvince')}"
+                                  th:errors="*{stateProvince}"></span>
+                        </div>
+
+                        <div class="field">
+                            <label class="field__label" for="country">Country</label>
+                            <input class="input" type="text" id="country" th:field="*{country}"
+                                   th:classappend="${#fields.hasErrors('country')} ? 'is-invalid'"
+                                   maxlength="100" placeholder="e.g. Nepal" />
+                            <span class="field__error" th:if="${#fields.hasErrors('country')}"
+                                  th:errors="*{country}"></span>
+                        </div>
+
+                        <div class="field">
+                            <label class="field__label" for="postalCode">Postal code</label>
+                            <input class="input" type="text" id="postalCode" th:field="*{postalCode}"
+                                   th:classappend="${#fields.hasErrors('postalCode')} ? 'is-invalid'"
+                                   maxlength="20" />
+                            <span class="field__error" th:if="${#fields.hasErrors('postalCode')}"
+                                  th:errors="*{postalCode}"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Academic interests & assignment -->
+                <div class="form-section">
+                    <div class="form-section__title">Academic interests &amp; assignment</div>
+                    <p class="form-section__hint">Study preferences and the counselor responsible for this student.</p>
+
+                    <div class="form-grid form-grid--full">
+                        <div class="field">
+                            <label class="field__label" for="interestedCountries">Countries of interest</label>
+                            <input class="input" type="text" id="interestedCountries"
+                                   th:field="*{interestedCountries}"
+                                   placeholder="e.g. UK, Australia, Canada" />
+                            <span class="field__error" style="color: var(--muted); font-weight: 400;">
+                                Separate multiple countries with commas.</span>
+                        </div>
+
+                        <div class="field">
+                            <label class="field__label" for="interestedCourses">Courses / fields of study</label>
+                            <input class="input" type="text" id="interestedCourses"
+                                   th:field="*{interestedCourses}"
+                                   placeholder="e.g. Computer Science, Business Administration" />
+                            <span class="field__error" style="color: var(--muted); font-weight: 400;">
+                                Separate multiple courses with commas.</span>
+                        </div>
+
+                        <div class="field">
+                            <label class="field__label" for="assignedCounselorId">Assigned counselor</label>
+                            <select class="select" id="assignedCounselorId" th:field="*{assignedCounselorId}">
+                                <option th:value="${null}">Unassigned</option>
+                                <option th:each="c : ${counselors}"
+                                        th:value="${c.id()}" th:text="${c.name()}">Counselor</option>
+                            </select>
+                            <span class="field__error" style="color: var(--muted); font-weight: 400;"
+                                  th:if="${counselors == null or counselors.isEmpty()}">
+                                No counselors in this tenant yet.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="form-actions">
+                    <a class="btn btn--ghost"
+                       th:href="${isEdit} ? @{/students/{id}(id=${studentId})} : @{/students}">Cancel</a>
+                    <button class="btn btn--primary" type="submit">
+                        <i data-lucide="check"></i>
+                        <span th:text="${isEdit} ? 'Save changes' : 'Register student'">Save</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+</th:block>
+</body>
+</html>

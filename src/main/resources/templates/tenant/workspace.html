@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<!--
+    Tenant-admin: edit own workspace profile and settings. Active nav: 'workspace'
+-->
+<html th:replace="~{fragments/layout :: layout('Workspace settings', 'Your consultancy', 'workspace', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack">
+        <div th:if="${successMessage}" class="flash flash--success">
+            <i data-lucide="check-circle-2"></i><span th:text="${successMessage}">Saved.</span>
+        </div>
+        <div th:if="${errorMessage}" class="flash flash--error">
+            <i data-lucide="alert-circle"></i><span th:text="${errorMessage}">Error.</span>
+        </div>
+
+        <div class="page-head">
+            <div>
+                <h1 class="page-head__title" th:text="${tenant.name}">Workspace</h1>
+                <p class="page-head__sub">Plan: <span th:text="${tenant.plan.label()}">Plan</span></p>
+            </div>
+        </div>
+
+        <div class="detail-grid">
+            <!-- Profile -->
+            <div class="card">
+                <div class="card__header"><h3 class="card__title">Profile</h3></div>
+                <div class="card__body">
+                    <form method="post" th:action="@{/workspace/profile}" class="stack">
+                        <div class="field">
+                            <label class="field__label" for="name">Display name</label>
+                            <input class="input" id="name" type="text" name="name" th:value="${tenant.name}" />
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="pcName">Primary contact name</label>
+                            <input class="input" id="pcName" type="text" name="primaryContactName" th:value="${tenant.primaryContactName}" />
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="pcEmail">Primary contact email</label>
+                            <input class="input" id="pcEmail" type="email" name="primaryContactEmail" th:value="${tenant.primaryContactEmail}" />
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="pcPhone">Primary contact phone</label>
+                            <input class="input" id="pcPhone" type="text" name="primaryContactPhone" th:value="${tenant.primaryContactPhone}" />
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="locale">Locale</label>
+                            <input class="input" id="locale" type="text" name="locale" th:value="${tenant.locale}" />
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="timezone">Timezone</label>
+                            <input class="input" id="timezone" type="text" name="timezone" th:value="${tenant.timezone}" />
+                        </div>
+                        <button class="btn btn--primary" type="submit">
+                            <i data-lucide="save"></i><span>Save profile</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="card">
+                <div class="card__header"><h3 class="card__title">Settings</h3></div>
+                <div class="card__body">
+                    <form method="post" th:action="@{/workspace/settings}" class="stack">
+                        <div class="field">
+                            <label class="field__label" for="brandColor">Brand colour</label>
+                            <input class="input" id="brandColor" type="text" name="brandColor" th:value="${settings.brandColor}" placeholder="#0f766e" />
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="logoReference">Logo reference</label>
+                            <input class="input" id="logoReference" type="text" name="logoReference" th:value="${settings.logoReference}" />
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="channels">Notification channels</label>
+                            <input class="input" id="channels" type="text" name="defaultNotificationChannels"
+                                   th:value="${settings.defaultNotificationChannels}" placeholder="EMAIL,SMS" />
+                        </div>
+                        <button class="btn btn--primary" type="submit">
+                            <i data-lucide="save"></i><span>Save settings</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>
+</body>
+</html>

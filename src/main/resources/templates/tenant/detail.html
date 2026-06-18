@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<!--
+    Super-admin tenant detail: profile, plan and lifecycle controls. Active nav: 'tenants'
+-->
+<html th:replace="~{fragments/layout :: layout('Tenant', 'Workspace detail', 'tenants', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack"
+         th:with="stampClass=${ {'ACTIVE':'stamp--approved','SUSPENDED':'stamp--pending','INACTIVE':'stamp--rejected'} }">
+
+        <div th:if="${successMessage}" class="flash flash--success">
+            <i data-lucide="check-circle-2"></i><span th:text="${successMessage}">Saved.</span>
+        </div>
+        <div th:if="${errorMessage}" class="flash flash--error">
+            <i data-lucide="alert-circle"></i><span th:text="${errorMessage}">Error.</span>
+        </div>
+
+        <div class="page-head">
+            <div>
+                <h1 class="page-head__title" th:text="${tenant.name}">Tenant</h1>
+                <p class="page-head__sub is-mono" th:text="${tenant.slug}">slug</p>
+            </div>
+            <div class="page-head__actions">
+                <span class="stamp" th:classappend="${stampClass.get(tenant.status.name())}"
+                      th:text="${tenant.status}">ACTIVE</span>
+                <a class="btn btn--ghost" href="/tenants">Back</a>
+            </div>
+        </div>
+
+        <div class="detail-grid">
+            <!-- Profile -->
+            <div class="card">
+                <div class="card__header"><h3 class="card__title">Profile</h3></div>
+                <div class="card__body">
+                    <div class="info-list">
+                        <div class="info-list__row"><span>Plan</span><span th:text="${tenant.plan.label()}">Plan</span></div>
+                        <div class="info-list__row"><span>Max students</span><span th:text="${tenant.maxStudents != null ? tenant.maxStudents : 'Unlimited'}">—</span></div>
+                        <div class="info-list__row"><span>Max staff</span><span th:text="${tenant.maxStaffUsers != null ? tenant.maxStaffUsers : 'Unlimited'}">—</span></div>
+                        <div class="info-list__row"><span>Contact</span><span th:text="${tenant.primaryContactName}">—</span></div>
+                        <div class="info-list__row"><span>Email</span><span th:text="${tenant.primaryContactEmail}">—</span></div>
+                        <div class="info-list__row"><span>Phone</span><span th:text="${tenant.primaryContactPhone != null ? tenant.primaryContactPhone : '—'}">—</span></div>
+                        <div class="info-list__row"><span>Locale</span><span th:text="${tenant.locale}">—</span></div>
+                        <div class="info-list__row"><span>Timezone</span><span th:text="${tenant.timezone}">—</span></div>
+                        <div class="info-list__row" th:if="${tenant.status.name() == 'SUSPENDED'}">
+                            <span>Suspension reason</span><span th:text="${tenant.suspensionReason}">—</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lifecycle -->
+            <div class="card">
+                <div class="card__header"><h3 class="card__title">Change status</h3></div>
+                <div class="card__body">
+                    <form method="post" th:action="@{/tenants/{id}/status(id=${tenant.id})}" class="stack">
+                        <div class="field">
+                            <label class="field__label" for="status">Status</label>
+                            <select class="select" id="status" name="status">
+                                <option th:each="s : ${statuses}" th:value="${s.name()}"
+                                        th:text="${s}" th:selected="${s == tenant.status}"></option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="reason">Reason (required to suspend)</label>
+                            <input class="input" id="reason" type="text" name="reason" placeholder="e.g. invoice overdue" />
+                        </div>
+                        <button class="btn btn--primary" type="submit">
+                            <i data-lucide="refresh-cw"></i><span>Apply status</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Plan -->
+            <div class="card">
+                <div class="card__header"><h3 class="card__title">Change plan</h3></div>
+                <div class="card__body">
+                    <form method="post" th:action="@{/tenants/{id}/plan(id=${tenant.id})}" class="stack">
+                        <div class="field">
+                            <label class="field__label" for="plan">Plan</label>
+                            <select class="select" id="plan" name="plan">
+                                <option th:each="p : ${plans}" th:value="${p.name()}"
+                                        th:text="${p.label()}" th:selected="${p == tenant.plan}"></option>
+                            </select>
+                        </div>
+                        <p class="form-section__hint">Leave the overrides blank to reset to the new plan's defaults.</p>
+                        <div class="field">
+                            <label class="field__label" for="maxStudents">Max students override</label>
+                            <input class="input" id="maxStudents" type="number" min="0" name="maxStudents" />
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="maxStaffUsers">Max staff override</label>
+                            <input class="input" id="maxStaffUsers" type="number" min="0" name="maxStaffUsers" />
+                        </div>
+                        <button class="btn btn--primary" type="submit">
+                            <i data-lucide="badge-dollar-sign"></i><span>Apply plan</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>
+</body>
+</html>

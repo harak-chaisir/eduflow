@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<!--
+    Super-admin: provision a new tenant. Active nav: 'tenants'
+-->
+<html th:replace="~{fragments/layout :: layout('New tenant', 'Provision a workspace', 'tenants', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack">
+        <div th:if="${errorMessage}" class="flash flash--error">
+            <i data-lucide="alert-circle"></i><span th:text="${errorMessage}">Error.</span>
+        </div>
+
+        <div class="page-head">
+            <div><h1 class="page-head__title">New tenant</h1></div>
+            <div class="page-head__actions">
+                <a class="btn btn--ghost" href="/tenants">Cancel</a>
+            </div>
+        </div>
+
+        <form method="post" th:action="@{/tenants/new}" th:object="${tenantForm}" class="card">
+            <div class="card__body">
+                <div class="form-section">
+                    <h3 class="form-section__title">Profile</h3>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label class="field__label" for="name">Name</label>
+                            <input class="input" id="name" type="text" th:field="*{name}" placeholder="Bright Future Education" />
+                            <span class="field__error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="slug">Slug</label>
+                            <input class="input is-mono" id="slug" type="text" th:field="*{slug}" placeholder="bright-future" />
+                            <span class="field__error" th:if="${#fields.hasErrors('slug')}" th:errors="*{slug}"></span>
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="plan">Plan</label>
+                            <select class="select" id="plan" th:field="*{plan}">
+                                <option th:each="p : ${plans}" th:value="${p.name()}" th:text="${p.label()}"></option>
+                            </select>
+                            <span class="field__error" th:if="${#fields.hasErrors('plan')}" th:errors="*{plan}"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="form-section__title">Primary contact</h3>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label class="field__label" for="pcName">Contact name</label>
+                            <input class="input" id="pcName" type="text" th:field="*{primaryContactName}" />
+                            <span class="field__error" th:if="${#fields.hasErrors('primaryContactName')}" th:errors="*{primaryContactName}"></span>
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="pcEmail">Contact email</label>
+                            <input class="input" id="pcEmail" type="email" th:field="*{primaryContactEmail}" />
+                            <span class="field__error" th:if="${#fields.hasErrors('primaryContactEmail')}" th:errors="*{primaryContactEmail}"></span>
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="pcPhone">Contact phone</label>
+                            <input class="input" id="pcPhone" type="text" th:field="*{primaryContactPhone}" />
+                            <span class="field__error" th:if="${#fields.hasErrors('primaryContactPhone')}" th:errors="*{primaryContactPhone}"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="form-section__title">Locale &amp; limits</h3>
+                    <p class="form-section__hint">Leave limits blank to use the plan defaults.</p>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label class="field__label" for="locale">Locale</label>
+                            <input class="input" id="locale" type="text" th:field="*{locale}" placeholder="en-NP" />
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="timezone">Timezone</label>
+                            <input class="input" id="timezone" type="text" th:field="*{timezone}" placeholder="Asia/Kathmandu" />
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="maxStudents">Max students</label>
+                            <input class="input" id="maxStudents" type="number" min="0" th:field="*{maxStudents}" />
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="maxStaffUsers">Max staff users</label>
+                            <input class="input" id="maxStaffUsers" type="number" min="0" th:field="*{maxStaffUsers}" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <a class="btn btn--ghost" href="/tenants">Cancel</a>
+                <button class="btn btn--primary" type="submit">
+                    <i data-lucide="check"></i><span>Provision tenant</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</th:block>
+</body>
+</html>

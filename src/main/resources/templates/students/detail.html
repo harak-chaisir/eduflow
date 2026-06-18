@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<!--
+    Student detail page.
+    Plugs into the shared sidebar shell via fragments/layout.
+    Active nav: 'students'
+-->
+<html th:replace="~{fragments/layout :: layout(${student.fullName}, 'Students / ' + ${student.fullName}, 'students', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack"
+         th:with="stampClass=${ {'LEAD':'stamp--empty','QUALIFIED':'stamp--pending','ACTIVE':'stamp--approved','ENROLLED':'stamp--needs_revision','INACTIVE':'stamp--rejected'} }">
+
+        <!-- ── Flash messages ─────────────────────────────────────────────── -->
+        <div th:if="${successMessage}" class="flash flash--success">
+            <i data-lucide="check-circle-2"></i>
+            <span th:text="${successMessage}">Saved.</span>
+        </div>
+        <div th:if="${errorMessage}" class="flash flash--error">
+            <i data-lucide="alert-circle"></i>
+            <span th:text="${errorMessage}">Error.</span>
+        </div>
+
+        <!-- Back link + actions -->
+        <div class="page-head">
+            <a href="/students" class="eyebrow" style="display:inline-flex; align-items:center; gap:6px;">
+                <i data-lucide="arrow-left" class="icon-sm"></i><span>Back to students</span>
+            </a>
+            <div class="page-head__actions">
+                <a class="btn btn--ghost" th:href="@{/students/{id}/documents(id=${student.id})}">
+                    <i data-lucide="folder"></i><span>Documents</span>
+                </a>
+                <a sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')"
+                   class="btn btn--ghost" th:href="@{/students/{id}/edit(id=${student.id})}">
+                    <i data-lucide="pencil"></i><span>Edit</span>
+                </a>
+                <form sec:authorize="hasAnyRole('TENANT_ADMIN','SUPER_ADMIN')"
+                      th:action="@{/students/{id}/delete(id=${student.id})}"
+                      method="post" th:if="${student.status.name() != 'INACTIVE'}"
+                      hx-confirm="Deactivate this student? This action can be reversed.">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button class="btn btn--ghost" type="submit" style="color: var(--status-rejected-fg);">
+                        <i data-lucide="user-x"></i><span>Deactivate</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ── Profile header ──────────────────────────────────────────────── -->
+        <div class="card">
+            <div class="card__body">
+                <div class="profile-head">
+                    <span class="avatar" style="width:64px; height:64px; font-size:1.5rem; border-radius:18px;"
+                          th:text="${#strings.substring(student.firstName, 0, 1).toUpperCase()}">A</span>
+                    <div class="profile-head__meta">
+                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                            <h1 style="font-size:1.4rem;" th:text="${student.fullName}">Student Name</h1>
+                            <!--
+                                Named fragment for OOB swap: when a status transition succeeds,
+                                the server returns this stamp wrapped in hx-swap-oob so the badge
+                                in the profile header updates without re-rendering the whole page.
+                            -->
+                            <span id="profileStatusStamp"
+                                  th:fragment="profileStatusStamp"
+                                  class="stamp"
+                                  th:classappend="${stampClass != null ? stampClass.get(student.status.name()) : ''}"
+                                  th:text="${student.status}">LEAD</span>
+                        </div>
+                        <div class="profile-contact">
+                            <span><i data-lucide="mail" class="icon-sm"></i><span th:text="${student.email}">email</span></span>
+                            <span th:if="${student.phone}">
+                                <i data-lucide="phone" class="icon-sm"></i><span th:text="${student.phone}">phone</span>
+                            </span>
+                            <span th:if="${student.assignedCounselorName}">
+                                <i data-lucide="user-round" class="icon-sm"></i>
+                                <span th:text="'Counselor: ' + ${student.assignedCounselorName}">Counselor</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Detail grid ─────────────────────────────────────────────────── -->
+        <div class="detail-grid">
+
+            <div class="stack">
+                <!-- Personal -->
+                <div class="card">
+                    <div class="card__header"><span class="card__title">Personal details</span></div>
+                    <div class="card__body">
+                        <dl class="info-list">
+                            <div class="info-list__row">
+                                <dt>Date of birth</dt>
+                                <dd th:text="${student.dateOfBirth != null ?
+                                        #strings.substring(student.dateOfBirth.toString(), 0, 10) : '—'}">—</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>Gender</dt>
+                                <dd th:text="${student.gender != null ? student.gender : '—'}">—</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>Nationality</dt>
+                                <dd th:text="${student.nationality != null ? student.nationality : '—'}">—</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Address -->
+                <div class="card">
+                    <div class="card__header"><span class="card__title">Address</span></div>
+                    <div class="card__body">
+                        <dl class="info-list">
+                            <div class="info-list__row">
+                                <dt>Street</dt>
+                                <dd>
+                                    <span th:text="${student.addressLine1 != null ? student.addressLine1 : '—'}">—</span>
+                                    <div class="table__sub" th:if="${student.addressLine2}"
+                                         th:text="${student.addressLine2}"></div>
+                                </dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>City</dt>
+                                <dd th:text="${student.city != null ? student.city : '—'}">—</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>State / province</dt>
+                                <dd th:text="${student.stateProvince != null ? student.stateProvince : '—'}">—</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>Country</dt>
+                                <dd th:text="${student.country != null ? student.country : '—'}">—</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>Postal code</dt>
+                                <dd th:text="${student.postalCode != null ? student.postalCode : '—'}">—</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Academic interests -->
+                <div class="card">
+                    <div class="card__header"><span class="card__title">Academic interests</span></div>
+                    <div class="card__body stack">
+                        <div>
+                            <div class="eyebrow" style="margin-bottom:8px;">Countries of interest</div>
+                            <div class="tag-row"
+                                 th:if="${student.interestedCountries != null and !student.interestedCountries.isEmpty()}">
+                                <span class="tag" th:each="c : ${student.interestedCountries}" th:text="${c}">UK</span>
+                            </div>
+                            <p class="table__sub"
+                               th:unless="${student.interestedCountries != null and !student.interestedCountries.isEmpty()}">
+                                None specified</p>
+                        </div>
+                        <div>
+                            <div class="eyebrow" style="margin-bottom:8px;">Courses / fields of study</div>
+                            <div class="tag-row"
+                                 th:if="${student.interestedCourses != null and !student.interestedCourses.isEmpty()}">
+                                <span class="tag" th:each="c : ${student.interestedCourses}" th:text="${c}">CS</span>
+                            </div>
+                            <p class="table__sub"
+                               th:unless="${student.interestedCourses != null and !student.interestedCourses.isEmpty()}">
+                                None specified</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar column -->
+            <div class="stack">
+                <!-- Record info -->
+                <div class="card">
+                    <div class="card__header"><span class="card__title">Record info</span></div>
+                    <div class="card__body">
+                        <dl class="info-list">
+                            <div class="info-list__row">
+                                <dt>Student ID</dt>
+                                <dd class="is-mono" style="font-size:.75rem;" th:text="${student.id}">—</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>Registered</dt>
+                                <dd th:text="${student.createdAt != null ?
+                                        #strings.substring(student.createdAt.toString(), 0, 10) : '—'}">—</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>Registered by</dt>
+                                <dd th:text="${student.createdBy != null ? student.createdBy : '—'}">—</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>Last updated</dt>
+                                <dd th:text="${student.updatedAt != null ?
+                                        #strings.substring(student.updatedAt.toString(), 0, 10) : '—'}">—</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+
+                <!--
+                    Status transitions card.
+                    Single fragment — internal conditionals cover active vs. inactive states.
+                    On HTMX status POST the server swaps just this element (outerHTML) and
+                    sends the profile stamp as an OOB update.
+                -->
+                <div id="statusCard"
+                     th:fragment="statusCard"
+                     th:with="stampClass=${ {'LEAD':'stamp--empty','QUALIFIED':'stamp--pending','ACTIVE':'stamp--approved','ENROLLED':'stamp--needs_revision','INACTIVE':'stamp--rejected'} }"
+                     class="card">
+
+                    <!-- Active / progressable state -->
+                    <th:block sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')"
+                              th:unless="${student.status.name() == 'INACTIVE'}">
+                        <div class="card__header"><span class="card__title">Progress student</span></div>
+                        <div class="card__body stack">
+                            <p class="table__sub" style="margin:0;">
+                                Current status: <strong th:text="${student.status}">LEAD</strong>. Advance to the next
+                                stage of the enrollment pipeline.
+                            </p>
+
+                            <form th:if="${student.status.name() == 'LEAD'}"
+                                  th:action="@{/students/{id}/status(id=${student.id})}"
+                                  method="post"
+                                  th:hx-post="@{/students/{id}/status(id=${student.id})}"
+                                  hx-target="#statusCard"
+                                  hx-swap="outerHTML">
+                                <input type="hidden" name="newStatus" value="QUALIFIED" />
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <button class="btn btn--primary" type="submit" style="width:100%;">
+                                    <i data-lucide="check"></i><span>Mark as qualified</span>
+                                </button>
+                            </form>
+
+                            <form th:if="${student.status.name() == 'QUALIFIED'}"
+                                  th:action="@{/students/{id}/status(id=${student.id})}"
+                                  method="post"
+                                  th:hx-post="@{/students/{id}/status(id=${student.id})}"
+                                  hx-target="#statusCard"
+                                  hx-swap="outerHTML">
+                                <input type="hidden" name="newStatus" value="ACTIVE" />
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <button class="btn btn--primary" type="submit" style="width:100%;">
+                                    <i data-lucide="check"></i><span>Mark as active</span>
+                                </button>
+                            </form>
+
+                            <form th:if="${student.status.name() == 'ACTIVE'}"
+                                  th:action="@{/students/{id}/status(id=${student.id})}"
+                                  method="post"
+                                  th:hx-post="@{/students/{id}/status(id=${student.id})}"
+                                  hx-target="#statusCard"
+                                  hx-swap="outerHTML">
+                                <input type="hidden" name="newStatus" value="ENROLLED" />
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <button class="btn btn--primary" type="submit" style="width:100%;">
+                                    <i data-lucide="graduation-cap"></i><span>Mark as enrolled</span>
+                                </button>
+                            </form>
+
+                            <form th:action="@{/students/{id}/status(id=${student.id})}" method="post"
+                                  th:hx-post="@{/students/{id}/status(id=${student.id})}"
+                                  hx-target="#statusCard"
+                                  hx-swap="outerHTML"
+                                  hx-confirm="Deactivate this student?">
+                                <input type="hidden" name="newStatus" value="INACTIVE" />
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <button class="btn btn--ghost" type="submit"
+                                        style="width:100%; color: var(--status-rejected-fg);">
+                                    <i data-lucide="user-x"></i><span>Deactivate</span>
+                                </button>
+                            </form>
+                        </div>
+                    </th:block>
+
+                    <!-- Inactive state -->
+                    <th:block th:if="${student.status.name() == 'INACTIVE'}">
+                        <div class="card__body">
+                            <div style="display:flex; align-items:center; gap:12px; color: var(--muted);">
+                                <i data-lucide="info"></i>
+                                <p style="margin:0; font-size:.9rem;">
+                                    This student is currently <strong>inactive</strong>. Status transitions are unavailable.
+                                </p>
+                            </div>
+                        </div>
+                    </th:block>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>
