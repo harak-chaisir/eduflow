@@ -3,6 +3,12 @@ package com.eduflow.web;
 import com.eduflow.security.EduFlowUserDetails;
 import com.eduflow.student.*;
 import com.eduflow.student.dto.*;
+import com.eduflow.workflow.InvalidWorkflowTransitionException;
+import com.eduflow.workflow.RequiredDocumentsMissingException;
+import com.eduflow.workflow.StudentWorkflowService;
+import com.eduflow.workflow.WorkflowArchivedException;
+import com.eduflow.workflow.WorkflowTemplate;
+import com.eduflow.workflow.WorkflowTemplateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +46,8 @@ import java.util.stream.Collectors;
 public class StudentWebController {
 
     private final StudentService studentService;
+    private final StudentWorkflowService studentWorkflowService;
+    private final WorkflowTemplateService workflowTemplateService;
 
     // ── List / Search ────────────────────────────────────────────────────────
 
@@ -160,10 +168,54 @@ public class StudentWebController {
         addNavAttributes(model, auth);
         try {
             model.addAttribute("student", studentService.getStudent(id));
+            addWorkflowModel(model, id);
             return "students/detail";
         } catch (StudentNotFoundException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
             return "redirect:/students";
+        }
+    }
+
+    // ── Workflow (assign / advance) ───────────────────────────────────────────
+
+    /** Assigns a workflow template to the student. */
+    @PostMapping("/{id}/workflow/assign")
+    @PreAuthorize("hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')")
+    public String assignWorkflow(@PathVariable UUID id, @RequestParam UUID templateId,
+                                 RedirectAttributes redirectAttributes) {
+        try {
+            studentWorkflowService.assignWorkflow(id, templateId);
+            redirectAttributes.addFlashAttribute("successMessage", "Workflow assigned.");
+        } catch (WorkflowArchivedException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/students/" + id;
+    }
+
+    /** Advances the student's workflow instance to the chosen stage. */
+    @PostMapping("/{id}/workflow/{instanceId}/move")
+    @PreAuthorize("hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN','DOC_OFFICER','VISA_OFFICER')")
+    public String moveWorkflowStage(@PathVariable UUID id, @PathVariable UUID instanceId,
+                                    @RequestParam UUID toStageId,
+                                    @RequestParam(required = false) String notes,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            studentWorkflowService.moveStage(instanceId, toStageId, notes);
+            redirectAttributes.addFlashAttribute("successMessage", "Workflow advanced.");
+        } catch (InvalidWorkflowTransitionException | RequiredDocumentsMissingException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/students/" + id;
+    }
+
+    /** Adds the student's workflow instance (if any) + assignable templates to the model. */
+    private void addWorkflowModel(Model model, UUID studentId) {
+        var workflow = studentWorkflowService.getForStudent(studentId);
+        model.addAttribute("studentWorkflow", workflow.orElse(null));
+        boolean hasActive = workflow.isPresent()
+                && workflow.get().getStatus() == com.eduflow.workflow.InstanceStatus.ACTIVE;
+        if (!hasActive) {
+            model.addAttribute("assignableWorkflows", workflowTemplateService.listAssignable());
         }
     }
 

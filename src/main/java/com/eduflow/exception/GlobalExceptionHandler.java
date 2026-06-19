@@ -6,10 +6,22 @@ import com.eduflow.document.storage.DocumentStorageException;
 import com.eduflow.student.DuplicateStudentException;
 import com.eduflow.student.InvalidStudentStatusTransitionException;
 import com.eduflow.student.StudentNotFoundException;
+import com.eduflow.task.InvalidTaskStatusTransitionException;
+import com.eduflow.task.TaskNotFoundException;
 import com.eduflow.tenant.DuplicateSlugException;
 import com.eduflow.tenant.InvalidTenantStatusTransitionException;
 import com.eduflow.tenant.TenantLimitExceededException;
 import com.eduflow.tenant.TenantNotFoundException;
+import com.eduflow.user.DuplicateStaffException;
+import com.eduflow.user.LastTenantAdminException;
+import com.eduflow.user.StaffNotFoundException;
+import com.eduflow.workflow.DuplicateWorkflowNameException;
+import com.eduflow.workflow.InvalidWorkflowGraphException;
+import com.eduflow.workflow.InvalidWorkflowTransitionException;
+import com.eduflow.workflow.RequiredDocumentsMissingException;
+import com.eduflow.workflow.StudentWorkflowNotFoundException;
+import com.eduflow.workflow.WorkflowArchivedException;
+import com.eduflow.workflow.WorkflowTemplateNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -66,11 +78,33 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(StaffNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleStaffNotFound(
+            StaffNotFoundException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler({WorkflowTemplateNotFoundException.class, StudentWorkflowNotFoundException.class,
+            TaskNotFoundException.class})
+    public ResponseEntity<ErrorResponse> handleWorkflowNotFound(
+            RuntimeException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage(), request);
+    }
+
     // ── 409 Conflict ─────────────────────────────────────────────────────────
 
     @ExceptionHandler(DuplicateStudentException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateStudent(
             DuplicateStudentException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.CONFLICT, CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DuplicateStaffException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateStaff(
+            DuplicateStaffException ex, HttpServletRequest request) {
 
         return build(HttpStatus.CONFLICT, CONFLICT, ex.getMessage(), request);
     }
@@ -85,6 +119,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TenantLimitExceededException.class)
     public ResponseEntity<ErrorResponse> handleTenantLimitExceeded(
             TenantLimitExceededException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.CONFLICT, CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DuplicateWorkflowNameException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateWorkflowName(
+            DuplicateWorkflowNameException ex, HttpServletRequest request) {
 
         return build(HttpStatus.CONFLICT, CONFLICT, ex.getMessage(), request);
     }
@@ -108,6 +149,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidTenantStatusTransitionException.class)
     public ResponseEntity<ErrorResponse> handleInvalidTenantStatusTransition(
             InvalidTenantStatusTransitionException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.UNPROCESSABLE_CONTENT, UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(LastTenantAdminException.class)
+    public ResponseEntity<ErrorResponse> handleLastTenantAdmin(
+            LastTenantAdminException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.UNPROCESSABLE_CONTENT, UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler({InvalidWorkflowGraphException.class, WorkflowArchivedException.class,
+            InvalidWorkflowTransitionException.class, RequiredDocumentsMissingException.class,
+            InvalidTaskStatusTransitionException.class})
+    public ResponseEntity<ErrorResponse> handleInvalidWorkflow(
+            RuntimeException ex, HttpServletRequest request) {
 
         return build(HttpStatus.UNPROCESSABLE_CONTENT, UNPROCESSABLE_ENTITY, ex.getMessage(), request);
     }

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<!--
+    Workflow template create / edit form.
+    Active nav: 'workflows'
+-->
+<html th:replace="~{fragments/layout :: layout(${isEdit} ? 'Edit workflow' : 'New workflow', 'Workflow properties', 'workflows', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack stack--narrow">
+
+        <th:block th:replace="~{fragments/components :: backLink('/workflows', 'Back to workflows')}"></th:block>
+        <th:block th:replace="~{fragments/components :: toastMarkers(${successMessage}, ${errorMessage})}"></th:block>
+
+        <div class="card">
+            <div class="card__header">
+                <h3 class="card__title" th:text="${isEdit} ? 'Edit workflow' : 'Create a workflow'">Create a workflow</h3>
+            </div>
+            <div class="card__body">
+                <form th:action="${isEdit} ? @{/workflows/{id}/edit(id=${workflowId})} : @{/workflows/new}"
+                      method="post" class="form-grid"
+                      th:object="${workflowForm}">
+                    <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+
+                    <div class="field">
+                        <label class="label" for="name">Name</label>
+                        <input class="input" type="text" id="name" th:field="*{name}"
+                               placeholder="e.g. Australia Student Workflow" required />
+                        <p class="field__error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Error</p>
+                    </div>
+
+                    <div class="field">
+                        <label class="label" for="country">Country</label>
+                        <input class="input" type="text" id="country" th:field="*{country}"
+                               placeholder="e.g. Australia" />
+                    </div>
+
+                    <div class="field field--full">
+                        <label class="label" for="description">Description</label>
+                        <textarea class="input" id="description" rows="3" th:field="*{description}"
+                                  placeholder="What is this workflow for?"></textarea>
+                    </div>
+
+                    <div class="field" th:if="${isEdit}">
+                        <label class="label checkbox">
+                            <input type="checkbox" th:field="*{active}" />
+                            <span>Active</span>
+                        </label>
+                    </div>
+
+                    <div class="form-actions field--full">
+                        <a class="btn btn--ghost" href="/workflows">Cancel</a>
+                        <button class="btn btn--primary" type="submit">
+                            <i data-lucide="save"></i>
+                            <span th:text="${isEdit} ? 'Save changes' : 'Create workflow'">Create workflow</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>

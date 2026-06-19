@@ -8,8 +8,7 @@
 <th:block th:fragment="content">
 
     <div class="stack">
-        <span th:if="${errorMessage}" data-toast data-toast-type="error"
-              th:data-toast-message="${errorMessage}"></span>
+        <th:block th:replace="~{fragments/components :: toastMarkers(null, ${errorMessage})}"></th:block>
 
         <div class="page-head">
             <div><h1 class="page-head__title">New tenant</h1></div>

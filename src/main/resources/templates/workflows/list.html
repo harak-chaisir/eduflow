@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<!--
+    Workflow templates list (tenant admin).
+    Active nav: 'workflows'
+-->
+<html th:replace="~{fragments/layout :: layout('Workflows', 'Process definitions', 'workflows', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack">
+
+        <div class="page-head">
+            <div>
+                <h1 class="page-head__title">Workflows</h1>
+                <p class="page-head__sub">Configure the stages and transitions your students move through.</p>
+            </div>
+            <div class="page-head__actions">
+                <a class="btn btn--primary" href="/workflows/new">
+                    <i data-lucide="plus"></i>
+                    <span>New workflow</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- ── Search bar ──────────────────────────────────────────────────── -->
+        <div class="card">
+            <div class="card__body">
+                <form id="workflowSearchForm" method="get" th:action="@{/workflows}" class="toolbar"
+                      hx-get="/workflows/search"
+                      hx-trigger="input changed delay:350ms from:#searchName, change from:#searchArchived, submit"
+                      hx-target="#workflow-results"
+                      hx-push-url="/workflows">
+                    <div class="toolbar__search">
+                        <i data-lucide="search"></i>
+                        <input class="input" type="text" id="searchName" name="name"
+                               th:value="${searchName}" placeholder="Search by name…" />
+                    </div>
+                    <div class="field toolbar__field--sm">
+                        <select class="select" id="searchArchived" name="archived">
+                            <option value="">Active &amp; archived</option>
+                            <option value="false" th:selected="${searchArchived != null and !searchArchived}">Active only</option>
+                            <option value="true" th:selected="${searchArchived != null and searchArchived}">Archived only</option>
+                        </select>
+                    </div>
+                    <button class="btn btn--primary" type="submit">
+                        <i data-lucide="search"></i><span>Search</span>
+                    </button>
+                    <a class="btn btn--ghost" href="/workflows">Reset</a>
+                </form>
+            </div>
+        </div>
+
+        <!-- ── Results (HTMX swap target) ──────────────────────────────────── -->
+        <div id="workflow-results" th:fragment="workflowResults"
+             th:with="filterQuery=${(searchName != null and !#strings.isEmpty(searchName) ? '&name=' + #uris.escapeQueryParam(searchName) : '')
+                                  + (searchArchived != null ? '&archived=' + searchArchived : '')}">
+
+            <th:block th:replace="~{fragments/components :: toastMarkers(${successMessage}, ${errorMessage})}"></th:block>
+
+            <p class="page-head__sub result-count">
+                <span th:text="${workflowsPage.totalElements}">0</span> workflow(s)
+            </p>
+
+            <div th:if="${workflowsPage.totalElements == 0}" class="empty card">
+                <i data-lucide="workflow" class="icon-muted-lg"></i>
+                <p class="empty__title">No workflows yet</p>
+                <p>Get started by <a href="/workflows/new">creating your first workflow</a>.</p>
+            </div>
+
+            <div class="card" th:unless="${workflowsPage.totalElements == 0}">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Workflow</th>
+                                <th>Country</th>
+                                <th>Stages</th>
+                                <th>Status</th>
+                                <th class="cell-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="wf : ${workflowsPage.content}">
+                                <td>
+                                    <div>
+                                        <a class="table__name" th:href="@{/workflows/{id}(id=${wf.id})}"
+                                           th:text="${wf.name}">Workflow name</a>
+                                        <div class="table__sub">
+                                            v<span th:text="${wf.version}">1</span>
+                                            <span th:if="${wf.defaultTemplate}" class="stamp stamp--approved" style="margin-left:.5rem;">Default</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="table__sub" th:text="${wf.country != null ? wf.country : '—'}">—</span></td>
+                                <td><span class="is-mono table__mono" th:text="${wf.stageCount}">0</span></td>
+                                <td>
+                                    <span th:if="${wf.archived}" class="stamp stamp--rejected">Archived</span>
+                                    <span th:unless="${wf.archived}" class="stamp"
+                                          th:classappend="${wf.active} ? 'stamp--approved' : 'stamp--empty'"
+                                          th:text="${wf.active} ? 'Active' : 'Inactive'">Active</span>
+                                </td>
+                                <td>
+                                    <div class="table__actions">
+                                        <a class="icon-btn" th:href="@{/workflows/{id}(id=${wf.id})}"
+                                           title="Open builder" aria-label="Open builder">
+                                            <i data-lucide="pencil-ruler"></i>
+                                        </a>
+                                        <form th:action="@{/workflows/{id}/clone(id=${wf.id})}" method="post">
+                                            <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                                            <button class="icon-btn" type="submit" title="Clone" aria-label="Clone">
+                                                <i data-lucide="copy"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <th:block th:replace="~{fragments/pagination :: pagination(${workflowsPage}, '/workflows', '/workflows/search', '#workflow-results', ${filterQuery})}"></th:block>
+            </div>
+
+        </div><!-- /#workflow-results -->
+    </div>
+
+</th:block>
+</body>
+</html>

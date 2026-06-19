@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<th:block th:fragment="csrfInput">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+</th:block>
+
+<th:block th:fragment="toastMarkers(successMessage, errorMessage)">
+    <span th:if="${successMessage}" data-toast data-toast-type="success"
+          th:data-toast-message="${successMessage}"></span>
+    <span th:if="${errorMessage}" data-toast data-toast-type="error"
+          th:data-toast-message="${errorMessage}"></span>
+</th:block>
+
+<div th:fragment="pageHeader(title, subtitle, actions)" class="page-head">
+    <div>
+        <h1 class="page-head__title" th:text="${title}">Page title</h1>
+        <p class="page-head__sub" th:if="${subtitle != null}" th:text="${subtitle}">Page subtitle</p>
+    </div>
+    <div class="page-head__actions" th:if="${actions != null}">
+        <th:block th:replace="${actions}"></th:block>
+    </div>
+</div>
+
+<div th:fragment="cardHeader(title, actions)" class="card__header">
+    <h3 class="card__title" th:text="${title}">Card title</h3>
+    <div class="card__actions" th:if="${actions != null}">
+        <th:block th:replace="${actions}"></th:block>
+    </div>
+</div>
+
+<div th:fragment="emptyState(icon, title, message, action)" class="empty card">
+    <i th:data-lucide="${icon}" class="icon-muted-lg"></i>
+    <p class="empty__title" th:text="${title}">Nothing found</p>
+    <p th:if="${message != null}" th:text="${message}">Try a different search.</p>
+    <p th:if="${action != null}">
+        <th:block th:replace="${action}"></th:block>
+    </p>
+</div>
+
+<a th:fragment="backLink(href, label)" th:href="${href}" class="inline-link eyebrow">
+    <i data-lucide="arrow-left" class="icon-sm"></i>
+    <span th:text="${label}">Back</span>
+</a>
+
+<!--
+    Status pill. Colour is driven entirely by the data-status attribute via CSS
+    (.stamp[data-status='…'] in eduflow.css) — no per-template class map.
+    Pass the enum as `status` and the display text as `label`.
+-->
+<span th:fragment="statusStamp(status, label)" class="stamp"
+      th:attr="data-status=${status.name()}" th:text="${label}">Status</span>
+
+<!-- Initial-letter avatar. `modifier` is an optional extra class (e.g. avatar--sm / avatar--lg). -->
+<span th:fragment="avatar(name, modifier)" class="avatar" th:classappend="${modifier}"
+      th:text="${name != null and !#strings.isEmpty(name) ? #strings.toUpperCase(#strings.substring(name, 0, 1)) : '?'}">A</span>
+
+<!--
+    Student status-advance form (used inside #statusCard on the detail page).
+    One reusable form for every pipeline transition — adding a transition is one
+    fragment call, not a copy-pasted <form>. `confirm` is optional (hx-confirm).
+-->
+<form th:fragment="statusAdvanceForm(studentId, newStatus, label, icon, btnClass, confirm)"
+      th:action="@{/students/{id}/status(id=${studentId})}" method="post"
+      th:hx-post="@{/students/{id}/status(id=${studentId})}"
+      hx-target="#statusCard" hx-swap="outerHTML"
+      th:attr="hx-confirm=${confirm}">
+    <input type="hidden" name="newStatus" th:value="${newStatus}" />
+    <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+    <button type="submit" class="btn btn--full" th:classappend="${btnClass}">
+        <i th:attr="data-lucide=${icon}"></i><span th:text="${label}">Advance</span>
+    </button>
+</form>
+
+</body>
+</html>

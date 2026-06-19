@@ -7,6 +7,7 @@ import com.eduflow.tenant.TenantService;
 import com.eduflow.tenant.TenantStatus;
 import com.eduflow.tenant.dto.TenantResponse;
 import com.eduflow.tenant.dto.TenantSettingsResponse;
+import com.eduflow.user.UserAdminService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,8 +24,11 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -43,6 +47,7 @@ class TenantWebControllerTest {
     private static final UUID TENANT_ID = UUID.randomUUID();
 
     @Mock TenantService tenantService;
+    @Mock UserAdminService userAdminService;
     @InjectMocks TenantWebController controller;
 
     private MockMvc mockMvc;
@@ -114,6 +119,40 @@ class TenantWebControllerTest {
                         .param("plan", "PROFESSIONAL"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("tenant/detail :: tenantPanels"));
+    }
+
+    // ── /tenants/{id}/reset-password ───────────────────────────────────────────────
+
+    @Test
+    void resetAdminPassword_whenValid_setsPasswordAndReturnsTenantPanelsFragment() throws Exception {
+        stubDetailLookups();
+        UUID userId = UUID.randomUUID();
+
+        mockMvc.perform(post("/tenants/{id}/reset-password", TENANT_ID)
+                        .header("HX-Request", "true")
+                        .param("userId", userId.toString())
+                        .param("password", "newSecret1")
+                        .param("confirmPassword", "newSecret1"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("tenant/detail :: tenantPanels"));
+
+        verify(userAdminService).setPassword(TENANT_ID, userId, "newSecret1");
+    }
+
+    @Test
+    void resetAdminPassword_whenPasswordsMismatch_doesNotCallService() throws Exception {
+        stubDetailLookups();
+        UUID userId = UUID.randomUUID();
+
+        mockMvc.perform(post("/tenants/{id}/reset-password", TENANT_ID)
+                        .header("HX-Request", "true")
+                        .param("userId", userId.toString())
+                        .param("password", "newSecret1")
+                        .param("confirmPassword", "different1"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("tenant/detail :: tenantPanels"));
+
+        verify(userAdminService, never()).setPassword(any(), any(), eq("newSecret1"));
     }
 
     // ── /workspace/profile ─────────────────────────────────────────────────────────

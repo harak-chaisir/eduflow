@@ -31,5 +31,15 @@ public interface AuditEventRepository extends JpaRepository<AuditEvent, UUID> {
      * @return list of events
      */
     List<AuditEvent> findByTenantIdOrderByCreatedAtDesc(UUID tenantId);
+
+    /**
+     * Returns the most recent audit events triggered by a given user within a tenant,
+     * most recent first. Drives the "recent activity" feed on the staff detail page.
+     *
+     * @param tenantId the tenant UUID
+     * @param userId   the acting user's UUID
+     * @return up to 8 events, most recent first
+     */
+    List<AuditEvent> findTop8ByTenantIdAndUserIdOrderByCreatedAtDesc(UUID tenantId, UUID userId);
 }
 

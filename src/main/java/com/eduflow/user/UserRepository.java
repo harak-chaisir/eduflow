@@ -1,6 +1,7 @@
 package com.eduflow.user;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -17,7 +18,7 @@ import java.util.UUID;
  * security layer to locate a user across tenants at login time.</p>
  */
 @Repository
-public interface UserRepository extends JpaRepository<User, UUID> {
+public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificationExecutor<User> {
 
     /**
      * Finds all users matching the given email (case-insensitive) and eagerly loads
@@ -49,6 +50,20 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             """)
     List<User> findActiveByTenantIdAndRoleName(@Param("tenantId") UUID tenantId,
                                                @Param("roleName") String roleName);
+
+    /**
+     * Lists users in a tenant who hold the given role, regardless of account status,
+     * ordered by name. Used by the super-admin "reset admin password" picker so that
+     * not-yet-activated ({@code PENDING_VERIFICATION}) admins are selectable too.
+     */
+    @Query("""
+            SELECT DISTINCT u FROM User u JOIN u.roles r
+            WHERE u.tenant.id = :tenantId
+              AND r.name = :roleName
+            ORDER BY u.firstName, u.lastName
+            """)
+    List<User> findByTenantIdAndRoleName(@Param("tenantId") UUID tenantId,
+                                         @Param("roleName") String roleName);
 
     /** Checks whether an email is already registered within a tenant. */
     boolean existsByEmailIgnoreCaseAndTenantId(String email, UUID tenantId);

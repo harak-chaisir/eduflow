@@ -8,6 +8,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${pageTitle} + ' · EduFlow'">EduFlow</title>
 
+    <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
@@ -60,7 +62,7 @@
                 <span>Visa</span>
             </a>
 
-            <a class="nav-link" th:classappend="${activeNav == 'tasks'} ? 'is-active'" href="#">
+            <a class="nav-link" th:classappend="${activeNav == 'tasks'} ? 'is-active'" th:href="@{/tasks}">
                 <i data-lucide="check-square"></i>
                 <span>Tasks</span>
             </a>
@@ -69,14 +71,20 @@
                 Administration
             </div>
 
-            <a class="nav-link" sec:authorize="hasRole('TENANT_ADMIN')"
-               th:classappend="${activeNav == 'staff'} ? 'is-active'" href="#">
+            <a class="nav-link" sec:authorize="hasAnyRole('TENANT_ADMIN','SUPER_ADMIN')"
+               th:classappend="${activeNav == 'staff'} ? 'is-active'" th:href="@{/staff}">
                 <i data-lucide="user-cog"></i>
                 <span>Staff</span>
             </a>
 
-            <a class="nav-link" sec:authorize="hasRole('TENANT_ADMIN')"
-               th:classappend="${activeNav == 'reports'} ? 'is-active'" href="#">
+            <a class="nav-link" sec:authorize="hasAnyRole('TENANT_ADMIN','SUPER_ADMIN')"
+               th:classappend="${activeNav == 'workflows'} ? 'is-active'" th:href="@{/workflows}">
+                <i data-lucide="workflow"></i>
+                <span>Workflows</span>
+            </a>
+
+            <a class="nav-link" sec:authorize="hasAnyRole('TENANT_ADMIN','SUPER_ADMIN')"
+               th:classappend="${activeNav == 'reports'} ? 'is-active'" th:href="@{/workflows/dashboard}">
                 <i data-lucide="bar-chart-3"></i>
                 <span>Reports</span>
             </a>
@@ -99,7 +107,7 @@
 
     <!-- ============================ Topbar ============================ -->
     <header class="topbar">
-        <div style="display:flex; align-items:center; gap:16px;">
+        <div class="topbar__left">
             <button class="menu-toggle" type="button" aria-label="Toggle navigation"
                     data-toggle="sidebar">
                 <i data-lucide="menu"></i>
@@ -111,6 +119,14 @@
         </div>
 
         <div class="topbar__user">
+            <a class="icon-btn notif-bell" sec:authorize="isAuthenticated()"
+               th:href="@{/notifications}" title="Notifications" aria-label="Notifications">
+                <i data-lucide="bell"></i>
+                <span class="notif-bell__badge"
+                      th:if="${unreadNotifications != null and unreadNotifications > 0}"
+                      th:text="${unreadNotifications}">0</span>
+            </a>
+
             <span class="tenant-badge" sec:authorize="isAuthenticated()">
                 <i data-lucide="building-2" class="icon-sm"></i>
                 <span th:text="${#authentication.principal.tenantName}">Your consultancy</span>

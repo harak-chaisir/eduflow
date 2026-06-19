@@ -262,6 +262,12 @@ h1, h2, h3, h4 {
     gap: 1px;
 }
 
+.topbar__left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
 .topbar__title h1 {
     font-size: 1.15rem;
 }
@@ -545,6 +551,49 @@ h1, h2, h3, h4 {
     box-shadow: inset 0 0 0 1px rgba(4, 120, 87, 0.25);
 }
 
+/*
+   Attribute-driven status colours — single source of truth shared by every
+   domain's lifecycle. A status pill renders via the statusStamp fragment with
+   data-status="<ENUM_NAME>"; adding a new status is one rule here, no template
+   change. Each group reuses the same palette as the legacy .stamp--* modifiers.
+*/
+.stamp[data-status='QUALIFIED'],
+.stamp[data-status='PENDING'],
+.stamp[data-status='PENDING_VERIFICATION'],
+.stamp[data-status='SUSPENDED'] {
+    color: var(--status-pending-fg);
+    background-color: var(--status-pending-bg);
+}
+
+.stamp[data-status='ACTIVE'],
+.stamp[data-status='APPROVED'] {
+    color: var(--status-approved-fg);
+    background-color: var(--status-approved-bg);
+    box-shadow: inset 0 0 0 1px rgba(4, 120, 87, 0.25);
+}
+
+.stamp[data-status='INACTIVE'],
+.stamp[data-status='REJECTED'] {
+    color: var(--status-rejected-fg);
+    background-color: var(--status-rejected-bg);
+}
+
+.stamp[data-status='ENROLLED'],
+.stamp[data-status='NEEDS_REVISION'] {
+    color: var(--status-revision-fg);
+    background-color: var(--status-revision-bg);
+}
+
+.stamp[data-status='LEAD'] {
+    color: var(--status-empty-fg);
+    background-color: var(--status-empty-bg);
+}
+
+.stamp[data-status='LOCKED'] {
+    color: var(--status-revision-fg);
+    background-color: var(--status-revision-bg);
+}
+
 /* ----- Category sections + document rows -------------------------------- */
 .category {
     border-top: 1px solid var(--line);
@@ -691,6 +740,14 @@ h1, h2, h3, h4 {
     font-size: 0.8125rem;
 }
 
+.btn--full {
+    width: 100%;
+}
+
+.text-danger {
+    color: var(--status-rejected-fg);
+}
+
 .btn svg {
     width: 15px;
     height: 15px;
@@ -708,6 +765,12 @@ h1, h2, h3, h4 {
     font-size: 0.8125rem;
     font-weight: 600;
     color: var(--ink-soft);
+}
+
+.field__hint {
+    font-size: 0.8125rem;
+    color: var(--muted);
+    font-weight: 400;
 }
 
 .input,
@@ -1005,6 +1068,238 @@ h1, h2, h3, h4 {
 .stat-card--accent .stat-card__hint {
     color: var(--accent-strong);
 }
+
+/* ----- Staff: seat-usage stat card ------------------------------------- */
+.stat-card--seats {
+    background: linear-gradient(135deg, var(--brand-strong), var(--brand));
+    border-color: var(--brand-strong);
+    color: #fff;
+}
+
+.stat-card--seats .stat-card__label,
+.stat-card--seats .stat-card__hint {
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.stat-card--seats .stat-card__value {
+    color: #fff;
+}
+
+.stat-card--seats .stat-card__icon {
+    background-color: rgba(255, 255, 255, 0.16);
+    color: #fff;
+}
+
+.stat-card__value-max {
+    font-size: 1rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.seat-bar {
+    height: 6px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.22);
+    overflow: hidden;
+}
+
+.seat-bar__fill {
+    height: 100%;
+    border-radius: 999px;
+    background-color: #fff;
+}
+
+/* ----- Staff: roster caseload cell ------------------------------------ */
+.caseload-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.caseload-cell .icon-sm {
+    color: var(--muted);
+}
+
+/* ----- Staff detail: card header meta + centered footer --------------- */
+.card__meta {
+    font-size: 0.8125rem;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.card__footer--center {
+    padding: var(--space-4) var(--space-5);
+    border-top: 1px solid var(--line);
+    text-align: center;
+}
+
+.empty--inline {
+    border: none;
+    box-shadow: none;
+    padding: var(--space-6) var(--space-5);
+}
+
+/* ----- Staff detail: role chips in profile header --------------------- */
+.profile-head__roles {
+    margin-left: auto;
+    align-self: flex-start;
+}
+
+.tag--role {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background-color: var(--brand-soft);
+    border-color: rgba(15, 118, 110, 0.18);
+    color: var(--brand-strong);
+}
+
+.tag--role .icon-sm {
+    width: 14px;
+    height: 14px;
+}
+
+/* ----- Staff detail: caseload pipeline strip -------------------------- */
+.pipeline-strip {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--line);
+}
+
+.pipeline-cell {
+    flex: 1;
+    min-width: 92px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    background-color: var(--surface-muted, #fcfcfd);
+}
+
+.pipeline-cell__label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
+.pipeline-cell__count {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.25rem;
+    margin-top: 2px;
+}
+
+/* Small status dot reusing the attribute-driven status palette. */
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex: none;
+    background-color: var(--muted);
+}
+
+.dot[data-status='QUALIFIED'] { background-color: var(--status-pending-fg); }
+.dot[data-status='ACTIVE']    { background-color: var(--status-approved-fg); }
+.dot[data-status='ENROLLED']  { background-color: var(--status-revision-fg); }
+.dot[data-status='LEAD']      { background-color: var(--status-empty-fg); }
+.dot[data-status='INACTIVE']  { background-color: var(--status-rejected-fg); }
+
+/* ----- Staff detail: recent activity --------------------------------- */
+.activity-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--line);
+}
+
+.activity-item:first-child {
+    border-top: none;
+}
+
+.activity-item__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-sm);
+    background-color: var(--surface-muted, #f3f4f6);
+    color: var(--muted);
+    flex: none;
+}
+
+.activity-item__text {
+    font-size: 0.9rem;
+    color: var(--ink);
+}
+
+.activity-item__time {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 1px;
+}
+
+/* ----- Staff detail: role & access list ------------------------------ */
+.access-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.access-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 0.875rem;
+}
+
+.access-item--allowed {
+    color: var(--ink-soft);
+}
+
+.access-item--allowed .icon-sm {
+    color: var(--status-approved-fg);
+}
+
+.access-item--denied {
+    color: var(--muted);
+}
+
+.access-item--denied .icon-sm {
+    color: #cbd5e1;
+}
+
+.access-divider {
+    height: 1px;
+    background-color: var(--line);
+    margin: var(--space-2) 0;
+}
+
+/* ----- Staff detail: email-verified indicator ------------------------ */
+.verified {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.verified--yes { color: var(--status-approved-fg); }
+.verified--no  { color: var(--status-pending-fg); }
 
 /* ----- Dashboard: funnel ------------------------------------------------- */
 .funnel {
@@ -1344,6 +1639,15 @@ h1, h2, h3, h4 {
     margin-bottom: 0;
 }
 
+.toolbar__field {
+    flex: 1 1 220px;
+}
+
+.toolbar__field--sm {
+    flex: 0 1 170px;
+    min-width: 170px;
+}
+
 .toolbar__search {
     position: relative;
     flex: 1 1 240px;
@@ -1360,6 +1664,10 @@ h1, h2, h3, h4 {
 
 .toolbar__search .input {
     padding-left: 38px;
+}
+
+.result-count {
+    margin-bottom: var(--space-3);
 }
 
 /* ----- Data table -------------------------------------------------------- */
@@ -1404,6 +1712,10 @@ h1, h2, h3, h4 {
     background-color: var(--surface-hover);
 }
 
+.cell-right {
+    text-align: right;
+}
+
 .table__primary {
     display: flex;
     align-items: center;
@@ -1418,6 +1730,10 @@ h1, h2, h3, h4 {
 .table__sub {
     font-size: 0.8125rem;
     color: var(--muted);
+}
+
+.table__mono {
+    font-size: 0.85rem;
 }
 
 .table__actions {
@@ -1539,6 +1855,10 @@ h1, h2, h3, h4 {
     margin: 0 0 var(--space-4);
 }
 
+.form-section__hint--compact {
+    margin-top: var(--space-2);
+}
+
 .form-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1551,6 +1871,58 @@ h1, h2, h3, h4 {
 
 .field--span2 {
     grid-column: 1 / -1;
+}
+
+/* Role selection cards (staff form) */
+.check-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+}
+
+.check-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.check-card:hover {
+    border-color: var(--brand);
+}
+
+.check-card:has(input:checked) {
+    border-color: var(--status-approved-fg);
+    background-color: var(--status-approved-bg);
+}
+
+.check-card input[type="checkbox"] {
+    margin-top: 0.2rem;
+}
+
+.check-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.check-card__title {
+    font-weight: 600;
+}
+
+.check-card__sub {
+    font-size: 0.8125rem;
+    color: var(--muted);
+}
+
+@media (max-width: 640px) {
+    .check-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .field__error {
@@ -1582,6 +1954,143 @@ h1, h2, h3, h4 {
 
 .required-mark {
     color: var(--status-rejected-fg);
+}
+
+.form-shell {
+    max-width: 860px;
+}
+
+.inline-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.validation-summary {
+    margin-bottom: var(--space-5);
+}
+
+.color-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.color-field__picker {
+    width: 44px;
+    height: 40px;
+    padding: 2px;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+}
+
+.color-field__input {
+    flex: 1;
+}
+
+.logo-preview {
+    margin-bottom: 10px;
+}
+
+.logo-preview__image {
+    max-height: 56px;
+    max-width: 180px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+}
+
+.icon-muted-lg {
+    width: 40px;
+    height: 40px;
+    opacity: 0.4;
+}
+
+/* ----- Small presentation utilities (replace ad-hoc inline styles) ------- */
+.is-flush {
+    margin: 0;
+}
+
+.text-muted {
+    color: var(--muted);
+}
+
+.text-strong {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+.eyebrow--spaced {
+    margin-bottom: var(--space-2);
+}
+
+/* Large rounded-square avatar for profile headers. */
+.avatar--lg {
+    width: 64px;
+    height: 64px;
+    font-size: 1.5rem;
+    border-radius: 18px;
+}
+
+/* Student detail: profile title row + name + record id. */
+.profile-title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.profile-head__name {
+    font-size: 1.4rem;
+}
+
+.record-id {
+    font-size: 0.75rem;
+}
+
+/* Muted info row shown when status transitions are unavailable. */
+.status-note {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--muted);
+}
+
+.status-note p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* ----- Auth pages (login / set-password) -------------------------------- */
+.auth__heading {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    margin-bottom: var(--space-5);
+}
+
+.auth__heading--tight {
+    margin-bottom: var(--space-2);
+}
+
+.auth__sub--spaced {
+    margin-bottom: var(--space-5);
+}
+
+.auth__submit {
+    width: 100%;
+    margin-top: var(--space-2);
+}
+
+.flash--spaced {
+    margin-bottom: var(--space-4);
+}
+
+/* Title sitting directly under an inline back-link. */
+.page-head__title--stacked {
+    margin-top: 6px;
 }
 
 /* ----- Detail / profile -------------------------------------------------- */
@@ -1852,3 +2361,38 @@ h1, h2, h3, h4 {
 .user-menu__form {
     margin: 0;
 }
+
+/* ── Notification bell (topbar) + feed rows (Workflow module) ───────────────── */
+.notif-bell { position: relative; }
+.notif-bell__badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--color-danger, #dc2626);
+    color: #fff;
+    font-size: 10px;
+    line-height: 16px;
+    text-align: center;
+    font-weight: 700;
+}
+.notif-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.notif-row--unread { background: var(--color-surface-muted, rgba(37,99,235,.06)); }
+
+/* ── Workflow builder: stage colour dot ─────────────────────────────────────── */
+.stage-dot { display: inline-block; width: 10px; height: 10px; border-radius: 999px; margin-right: .5rem; vertical-align: middle; }
+.form-grid--inline { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border, #e5e7eb); }
+
+/* ── Workflow dashboard (KPI cards + stage bars) ───────────────────────────── */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
+.kpi .kpi__value { font-size: 1.75rem; font-weight: 800; line-height: 1.1; }
+.kpi .kpi__label { color: var(--color-text-muted, #6b7280); font-size: .8rem; margin-top: .25rem; }
+.bar-list { display: flex; flex-direction: column; gap: .6rem; }
+.bar-row { display: grid; grid-template-columns: 180px 1fr 40px; align-items: center; gap: .75rem; }
+.bar-row__label { font-size: .85rem; }
+.bar-row__track { background: var(--color-surface-muted, #f1f5f9); border-radius: 999px; height: 12px; overflow: hidden; }
+.bar-row__fill { height: 100%; background: var(--color-brand, #2563eb); border-radius: 999px; min-width: 2px; }
+.bar-row__value { text-align: right; font-size: .85rem; }

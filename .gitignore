@@ -39,3 +39,4 @@ src/main/resources/static/css/tailwind.css
 
 # Local document storage (DocumentStoragePort local adapter)
 /var/
+/docs/

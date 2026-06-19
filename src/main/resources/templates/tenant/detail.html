@@ -7,13 +7,9 @@
 <body>
 <th:block th:fragment="content">
 
-    <div class="stack" id="tenantPanels" th:fragment="tenantPanels"
-         th:with="stampClass=${ {'ACTIVE':'stamp--approved','SUSPENDED':'stamp--pending','INACTIVE':'stamp--rejected'} }">
+    <div class="stack" id="tenantPanels" th:fragment="tenantPanels">
 
-        <span th:if="${successMessage}" data-toast data-toast-type="success"
-              th:data-toast-message="${successMessage}"></span>
-        <span th:if="${errorMessage}" data-toast data-toast-type="error"
-              th:data-toast-message="${errorMessage}"></span>
+        <th:block th:replace="~{fragments/components :: toastMarkers(${successMessage}, ${errorMessage})}"></th:block>
 
         <div class="page-head">
             <div>
@@ -21,8 +17,7 @@
                 <p class="page-head__sub is-mono" th:text="${tenant.slug}">slug</p>
             </div>
             <div class="page-head__actions">
-                <span class="stamp" th:classappend="${stampClass.get(tenant.status.name())}"
-                      th:text="${tenant.status}">ACTIVE</span>
+                <th:block th:replace="~{fragments/components :: statusStamp(${tenant.status}, ${tenant.status})}"></th:block>
                 <a class="btn btn--ghost" href="/tenants">Back</a>
             </div>
         </div>
@@ -55,7 +50,7 @@
                     <form method="post" th:action="@{/tenants/{id}/status(id=${tenant.id})}" class="stack"
                           th:hx-post="@{/tenants/{id}/status(id=${tenant.id})}"
                           hx-target="#tenantPanels" hx-swap="outerHTML">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
                         <div class="field">
                             <label class="field__label" for="status">Status</label>
                             <select class="select" id="status" name="status">
@@ -81,7 +76,7 @@
                     <form method="post" th:action="@{/tenants/{id}/plan(id=${tenant.id})}" class="stack"
                           th:hx-post="@{/tenants/{id}/plan(id=${tenant.id})}"
                           hx-target="#tenantPanels" hx-swap="outerHTML">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
                         <div class="field">
                             <label class="field__label" for="plan">Plan</label>
                             <select class="select" id="plan" name="plan">
@@ -100,6 +95,45 @@
                         </div>
                         <button class="btn btn--primary" type="submit">
                             <i data-lucide="badge-dollar-sign"></i><span>Apply plan</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Reset admin password (super-admin only) -->
+            <div class="card">
+                <div class="card__header"><h3 class="card__title">Reset admin password</h3></div>
+                <div class="card__body">
+                    <p class="field__hint" th:if="${tenantAdmins.isEmpty()}">
+                        No admin users in this tenant yet.
+                    </p>
+                    <form th:unless="${tenantAdmins.isEmpty()}"
+                          method="post" th:action="@{/tenants/{id}/reset-password(id=${tenant.id})}" class="stack"
+                          th:hx-post="@{/tenants/{id}/reset-password(id=${tenant.id})}"
+                          hx-target="#tenantPanels" hx-swap="outerHTML">
+                        <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                        <div class="field">
+                            <label class="field__label" for="userId">Admin</label>
+                            <select class="select" id="userId" name="userId" required>
+                                <option th:each="a : ${tenantAdmins}" th:value="${a.id}"
+                                        th:text="${a.email + ' · ' + a.status}">admin@acme.com</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="password">New password</label>
+                            <input class="input" id="password" type="password" name="password"
+                                   autocomplete="new-password" required minlength="8"
+                                   placeholder="At least 8 characters" />
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="confirmPassword">Confirm password</label>
+                            <input class="input" id="confirmPassword" type="password" name="confirmPassword"
+                                   autocomplete="new-password" required minlength="8"
+                                   placeholder="Re-enter the password" />
+                            <span class="field__hint">Sets the password immediately and activates the account.</span>
+                        </div>
+                        <button class="btn btn--primary" type="submit">
+                            <i data-lucide="key-round"></i><span>Set password</span>
                         </button>
                     </form>
                 </div>

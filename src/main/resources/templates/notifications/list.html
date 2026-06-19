@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<!--
+    In-app notification feed.
+    Active nav: none (reached from the topbar bell)
+-->
+<html th:replace="~{fragments/layout :: layout('Notifications', 'Your notifications', '', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack">
+
+        <div class="page-head">
+            <div>
+                <h1 class="page-head__title">Notifications</h1>
+            </div>
+            <div class="page-head__actions" th:unless="${notifications.isEmpty()}">
+                <form th:action="@{/notifications/read-all}" method="post">
+                    <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                    <button class="btn btn--ghost" type="submit">
+                        <i data-lucide="check-check"></i><span>Mark all read</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div th:if="${notifications.isEmpty()}" class="empty card">
+            <i data-lucide="bell-off" class="icon-muted-lg"></i>
+            <p class="empty__title">No notifications</p>
+        </div>
+
+        <div class="card" th:unless="${notifications.isEmpty()}">
+            <ul class="info-list">
+                <li th:each="n : ${notifications}" class="info-list__row notif-row"
+                    th:classappend="${n.read} ? '' : 'notif-row--unread'">
+                    <div>
+                        <a th:if="${n.link != null}" class="table__name" th:href="${n.link}" th:text="${n.title}">Title</a>
+                        <span th:if="${n.link == null}" class="table__name" th:text="${n.title}">Title</span>
+                        <div class="table__sub" th:text="${n.body}">body</div>
+                        <div class="table__sub is-mono"
+                             th:text="${n.createdAt != null ? #strings.substring(n.createdAt.toString(),0,16) : ''}"></div>
+                    </div>
+                    <form th:if="${!n.read}" th:action="@{/notifications/{id}/read(id=${n.id})}" method="post">
+                        <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                        <button class="icon-btn" type="submit" title="Mark read" aria-label="Mark read">
+                            <i data-lucide="check"></i>
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>

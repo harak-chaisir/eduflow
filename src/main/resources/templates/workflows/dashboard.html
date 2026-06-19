@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<!--
+    Workflow dashboard + analytics (tenant admin).
+    Active nav: 'reports'
+-->
+<html th:replace="~{fragments/layout :: layout('Workflow dashboard', 'Analytics', 'reports', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack">
+
+        <div class="page-head">
+            <div>
+                <h1 class="page-head__title">Workflow dashboard</h1>
+                <p class="page-head__sub">Operational visibility across your student workflows.</p>
+            </div>
+            <div class="page-head__actions">
+                <a class="btn btn--ghost" href="/workflows"><i data-lucide="workflow"></i><span>Manage workflows</span></a>
+            </div>
+        </div>
+
+        <!-- ── KPI cards ───────────────────────────────────────────────────── -->
+        <div class="kpi-grid">
+            <div class="card kpi"><div class="card__body">
+                <div class="kpi__value" th:text="${metrics.activeWorkflows}">0</div>
+                <div class="kpi__label">Active workflows</div>
+            </div></div>
+            <div class="card kpi"><div class="card__body">
+                <div class="kpi__value" th:text="${metrics.activeInstances}">0</div>
+                <div class="kpi__label">Students in progress</div>
+            </div></div>
+            <div class="card kpi"><div class="card__body">
+                <div class="kpi__value" th:text="${metrics.completedInstances}">0</div>
+                <div class="kpi__label">Completed</div>
+            </div></div>
+            <div class="card kpi"><div class="card__body">
+                <div class="kpi__value" th:classappend="${metrics.slaViolations > 0} ? 'text-danger'"
+                     th:text="${metrics.slaViolations}">0</div>
+                <div class="kpi__label">SLA violations</div>
+            </div></div>
+            <div class="card kpi"><div class="card__body">
+                <div class="kpi__value" th:text="${metrics.pendingTasks}">0</div>
+                <div class="kpi__label">Pending tasks</div>
+            </div></div>
+            <div class="card kpi"><div class="card__body">
+                <div class="kpi__value"
+                     th:text="${metrics.averageCompletionDays != null ? metrics.averageCompletionDays + 'd' : '—'}">—</div>
+                <div class="kpi__label">Avg. completion</div>
+            </div></div>
+        </div>
+
+        <!-- ── Students per stage ──────────────────────────────────────────── -->
+        <div class="card">
+            <div class="card__header"><h3 class="card__title">Students by stage</h3></div>
+            <div class="card__body">
+                <div th:if="${metrics.studentsPerStage.isEmpty()}" class="empty">
+                    <p class="empty__title">No active students in any workflow yet</p>
+                </div>
+                <div class="bar-list" th:unless="${metrics.studentsPerStage.isEmpty()}">
+                    <div class="bar-row" th:each="row : ${metrics.studentsPerStage}">
+                        <div class="bar-row__label" th:text="${row.stageName()}">Stage</div>
+                        <div class="bar-row__track">
+                            <div class="bar-row__fill"
+                                 th:style="'width:' + ${metrics.maxStageCount > 0 ? (row.count() * 100 / metrics.maxStageCount) : 0} + '%'
+                                         + (${row.color()} != null ? ';background:' + ${row.color()} : '')">
+                            </div>
+                        </div>
+                        <div class="bar-row__value is-mono" th:text="${row.count()}">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Task throughput ─────────────────────────────────────────────── -->
+        <div class="card">
+            <div class="card__header"><h3 class="card__title">Tasks</h3></div>
+            <div class="card__body">
+                <dl class="info-list">
+                    <div class="info-list__row"><dt>Open</dt><dd th:text="${metrics.pendingTasks}">0</dd></div>
+                    <div class="info-list__row"><dt>Completed</dt><dd th:text="${metrics.completedTasks}">0</dd></div>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>

@@ -49,6 +49,7 @@ class StudentServiceTest {
     @Mock UserRepository    userRepository;
     @Mock AuditService      auditService;
     @Mock TenantLimitService tenantLimitService;
+    @Mock org.springframework.context.ApplicationEventPublisher events;
 
     @InjectMocks StudentService studentService;
 
