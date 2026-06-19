@@ -21,11 +21,16 @@
         wireUploadModal();
         // Re-wire verify modal decision logic if the modal was just populated.
         wireVerifyDecision();
+        // Re-wire colour pickers inside freshly swapped content (e.g. settings card).
+        wireColorPicker();
+        // Surface any flash messages carried in the swapped fragment as toasts.
+        scanToasts();
     });
 
     // ── HTMX: re-render Lucide icons after OOB swaps ─────────────────────────
     document.addEventListener("htmx:oobAfterSwap", function () {
         renderIcons();
+        scanToasts();
     });
 
     // ── HTMX: close the upload modal after a successful dossierContent swap ───
@@ -60,8 +65,68 @@
         wireUserMenu();
         wireFileInputs();
         wireUploadModal();
+        wireColorPicker();
+        scanToasts();
         // Verify modal is now HTMX-loaded on demand — no static wire needed.
     });
+
+    /* ── Toasts (Toastify) ────────────────────────────────────────────────────
+       Pages/fragments emit hidden <span data-toast data-toast-type data-toast-message>
+       markers wherever they previously rendered an inline flash. We pick them up on
+       load and after each HTMX swap, show a toast, and remove the marker. */
+    var TOAST_COLORS = {
+        success: "#047857",   // --status-approved-fg
+        error:   "#be123c",   // --status-rejected-fg
+        info:    "#4f46e5"    // brand-600
+    };
+
+    function showToast(message, type) {
+        if (!message || !window.Toastify) { return; }
+        window.Toastify({
+            text: message,
+            duration: 4500,
+            gravity: "top",
+            position: "right",
+            close: true,
+            stopOnFocus: true,
+            style: {
+                background: TOAST_COLORS[type] || TOAST_COLORS.info,
+                borderRadius: "10px",
+                boxShadow: "0 6px 20px rgba(15, 23, 42, .18)",
+                fontWeight: "600"
+            }
+        }).showToast();
+    }
+
+    function scanToasts(root) {
+        (root || document).querySelectorAll("[data-toast]").forEach(function (el) {
+            showToast(el.getAttribute("data-toast-message"), el.getAttribute("data-toast-type"));
+            if (el.parentNode) { el.parentNode.removeChild(el); }
+        });
+    }
+
+    /* Two-way sync between a native colour <input type="color"> and its editable hex text
+       field, so the swatch and the typed value always agree. Idempotent — safe to re-run
+       after HTMX swaps. */
+    function wireColorPicker() {
+        document.querySelectorAll("[data-color-field]").forEach(function (field) {
+            if (field.dataset.colorWired === "1") { return; }
+            var picker = field.querySelector("[data-color-picker]");
+            var hex = field.querySelector("[data-color-hex]");
+            if (!picker || !hex) { return; }
+
+            picker.addEventListener("input", function () {
+                hex.value = picker.value;
+            });
+            hex.addEventListener("input", function () {
+                var v = hex.value.trim();
+                if (/^#?[0-9a-fA-F]{6}$/.test(v)) {
+                    picker.value = v.charAt(0) === "#" ? v : "#" + v;
+                }
+            });
+            field.dataset.colorWired = "1";
+        });
+    }
 
     /* Topbar account dropdown: toggle on click, close on outside-click / Escape. */
     function wireUserMenu() {

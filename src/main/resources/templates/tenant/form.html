@@ -8,9 +8,8 @@
 <th:block th:fragment="content">
 
     <div class="stack">
-        <div th:if="${errorMessage}" class="flash flash--error">
-            <i data-lucide="alert-circle"></i><span th:text="${errorMessage}">Error.</span>
-        </div>
+        <span th:if="${errorMessage}" data-toast data-toast-type="error"
+              th:data-toast-message="${errorMessage}"></span>
 
         <div class="page-head">
             <div><h1 class="page-head__title">New tenant</h1></div>

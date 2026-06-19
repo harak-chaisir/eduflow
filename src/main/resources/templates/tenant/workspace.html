@@ -8,13 +8,6 @@
 <th:block th:fragment="content">
 
     <div class="stack">
-        <div th:if="${successMessage}" class="flash flash--success">
-            <i data-lucide="check-circle-2"></i><span th:text="${successMessage}">Saved.</span>
-        </div>
-        <div th:if="${errorMessage}" class="flash flash--error">
-            <i data-lucide="alert-circle"></i><span th:text="${errorMessage}">Error.</span>
-        </div>
-
         <div class="page-head">
             <div>
                 <h1 class="page-head__title" th:text="${tenant.name}">Workspace</h1>
@@ -24,10 +17,16 @@
 
         <div class="detail-grid">
             <!-- Profile -->
-            <div class="card">
+            <div class="card" id="profileCard" th:fragment="profileCard">
                 <div class="card__header"><h3 class="card__title">Profile</h3></div>
                 <div class="card__body">
-                    <form method="post" th:action="@{/workspace/profile}" class="stack">
+                    <span th:if="${profileMessage}" data-toast data-toast-type="success"
+                          th:data-toast-message="${profileMessage}"></span>
+                    <span th:if="${profileError}" data-toast data-toast-type="error"
+                          th:data-toast-message="${profileError}"></span>
+                    <form method="post" th:action="@{/workspace/profile}" class="stack"
+                          hx-post="/workspace/profile" hx-target="#profileCard" hx-swap="outerHTML">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                         <div class="field">
                             <label class="field__label" for="name">Display name</label>
                             <input class="input" id="name" type="text" name="name" th:value="${tenant.name}" />
@@ -60,23 +59,61 @@
             </div>
 
             <!-- Settings -->
-            <div class="card">
+            <div class="card" id="settingsCard" th:fragment="settingsCard">
                 <div class="card__header"><h3 class="card__title">Settings</h3></div>
                 <div class="card__body">
-                    <form method="post" th:action="@{/workspace/settings}" class="stack">
-                        <div class="field">
+                    <span th:if="${settingsMessage}" data-toast data-toast-type="success"
+                          th:data-toast-message="${settingsMessage}"></span>
+                    <span th:if="${settingsError}" data-toast data-toast-type="error"
+                          th:data-toast-message="${settingsError}"></span>
+                    <form method="post" th:action="@{/workspace/settings}" class="stack"
+                          enctype="multipart/form-data"
+                          hx-post="/workspace/settings" hx-target="#settingsCard" hx-swap="outerHTML"
+                          hx-encoding="multipart/form-data">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                        <!-- Brand colour: native colour picker synced with an editable hex field -->
+                        <div class="field" data-color-field>
                             <label class="field__label" for="brandColor">Brand colour</label>
-                            <input class="input" id="brandColor" type="text" name="brandColor" th:value="${settings.brandColor}" placeholder="#0f766e" />
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <input type="color" data-color-picker aria-label="Pick brand colour"
+                                       th:value="${settings.brandColor != null ? settings.brandColor : '#4f46e5'}"
+                                       style="width:44px; height:40px; padding:2px; cursor:pointer;
+                                              border:1px solid var(--line); border-radius:var(--radius-md);
+                                              background:var(--surface);" />
+                                <input class="input" id="brandColor" type="text" name="brandColor"
+                                       data-color-hex th:value="${settings.brandColor}"
+                                       placeholder="#4f46e5" pattern="#?[0-9a-fA-F]{6}"
+                                       style="flex:1;" />
+                            </div>
                         </div>
+
+                        <!-- Logo: current preview + replace upload -->
                         <div class="field">
-                            <label class="field__label" for="logoReference">Logo reference</label>
-                            <input class="input" id="logoReference" type="text" name="logoReference" th:value="${settings.logoReference}" />
+                            <label class="field__label" for="logoFile">Logo</label>
+                            <div th:if="${settings.logoReference}" style="margin-bottom:10px;">
+                                <img th:src="@{/workspace/logo(v=${settings.updatedAt})}" alt="Current logo"
+                                     style="max-height:56px; max-width:180px; padding:4px;
+                                            border:1px solid var(--line); border-radius:var(--radius-md);
+                                            background:var(--surface);" />
+                            </div>
+                            <input class="input" id="logoFile" type="file" name="logoFile" accept="image/*"
+                                   data-file-input />
+                            <p class="form-section__hint" style="margin-top:6px;">
+                                PNG, JPG or SVG. Uploading replaces the current logo.
+                            </p>
                         </div>
+
+                        <!-- Notification channel: dropdown defaulting to the saved value -->
                         <div class="field">
-                            <label class="field__label" for="channels">Notification channels</label>
-                            <input class="input" id="channels" type="text" name="defaultNotificationChannels"
-                                   th:value="${settings.defaultNotificationChannels}" placeholder="EMAIL,SMS" />
+                            <label class="field__label" for="notificationChannels">Notification channel</label>
+                            <select class="select" id="notificationChannels" name="notificationChannels">
+                                <option th:each="ch : ${channels}" th:value="${ch.name()}"
+                                        th:text="${ch.label()}"
+                                        th:selected="${ch.name() == selectedChannel}"></option>
+                            </select>
                         </div>
+
                         <button class="btn btn--primary" type="submit">
                             <i data-lucide="save"></i><span>Save settings</span>
                         </button>

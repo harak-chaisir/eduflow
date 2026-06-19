@@ -12,12 +12,10 @@
     <div class="stack"
          th:with="stampClass=${ {'ACTIVE':'stamp--approved','SUSPENDED':'stamp--pending','INACTIVE':'stamp--rejected'} }">
 
-        <div th:if="${successMessage}" class="flash flash--success">
-            <i data-lucide="check-circle-2"></i><span th:text="${successMessage}">Saved.</span>
-        </div>
-        <div th:if="${errorMessage}" class="flash flash--error">
-            <i data-lucide="alert-circle"></i><span th:text="${errorMessage}">Error.</span>
-        </div>
+        <span th:if="${successMessage}" data-toast data-toast-type="success"
+              th:data-toast-message="${successMessage}"></span>
+        <span th:if="${errorMessage}" data-toast data-toast-type="error"
+              th:data-toast-message="${errorMessage}"></span>
 
         <div class="page-head">
             <div><h1 class="page-head__title">Tenants</h1></div>
@@ -31,7 +29,18 @@
         <!-- Filter bar -->
         <div class="card">
             <div class="card__body">
-                <form method="get" th:action="@{/tenants}" class="toolbar">
+                <!--
+                    Valid GET form (no-JS fallback). With JS, HTMX intercepts each input and
+                    fires a debounced GET to /tenants/search, swapping only #tenant-results.
+                -->
+                <form method="get" th:action="@{/tenants}" class="toolbar"
+                      hx-get="/tenants/search"
+                      hx-trigger="input changed delay:350ms from:[name='q'],
+                                  change from:[name='status'],
+                                  change from:[name='plan'],
+                                  submit"
+                      hx-target="#tenant-results"
+                      hx-push-url="/tenants">
                     <div class="toolbar__search">
                         <i data-lucide="search"></i>
                         <input class="input" type="text" name="q" th:value="${searchQ}"
@@ -58,6 +67,10 @@
                 </form>
             </div>
         </div>
+
+        <!-- ── Results — this div is the HTMX swap target ─────────────────── -->
+        <div id="tenant-results" th:fragment="tenantResults"
+             th:with="stampClass=${ {'ACTIVE':'stamp--approved','SUSPENDED':'stamp--pending','INACTIVE':'stamp--rejected'} }">
 
         <p class="page-head__sub">
             <span th:text="${tenantsPage.totalElements}">0</span> tenant(s) found
@@ -112,6 +125,7 @@
                 </table>
             </div>
         </div>
+        </div><!-- /#tenant-results -->
     </div>
 </th:block>
 </body>

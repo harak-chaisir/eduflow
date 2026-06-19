@@ -5,6 +5,8 @@ import com.eduflow.security.EduFlowUserDetails;
 import com.eduflow.tenant.dto.ChangeTenantStatusRequest;
 import com.eduflow.tenant.dto.CreateTenantRequest;
 import com.eduflow.tenant.dto.TenantResponse;
+import com.eduflow.tenant.dto.TenantSettingsResponse;
+import com.eduflow.tenant.dto.UpdateTenantSettingsRequest;
 import com.eduflow.tenant.event.TenantEvents;
 import com.eduflow.user.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,9 +17,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +30,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -43,6 +48,7 @@ class TenantServiceTest {
     @Mock TenantSettingsRepository settingsRepository;
     @Mock AuditService auditService;
     @Mock ApplicationEventPublisher events;
+    @Mock TenantAssetStorage assetStorage;
 
     @InjectMocks TenantService tenantService;
 
@@ -163,6 +169,55 @@ class TenantServiceTest {
 
         assertThat(response.getStatus()).isEqualTo(TenantStatus.ACTIVE);
         assertThat(response.getDeactivatedAt()).isNull();
+    }
+
+    // ── Settings ──────────────────────────────────────────────────────────────
+
+    @Test
+    void updateSettings_withChannelList_normalisesToValidCsv() {
+        TenantSettings settings = TenantSettings.builder().defaultNotificationChannels("EMAIL").build();
+        when(settingsRepository.findByTenantId(TENANT_ID)).thenReturn(Optional.of(settings));
+        when(settingsRepository.save(any(TenantSettings.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UpdateTenantSettingsRequest req = UpdateTenantSettingsRequest.builder()
+                .notificationChannels(List.of("email", "WHATSAPP", "bogus"))
+                .build();
+
+        TenantSettingsResponse resp = tenantService.updateSettings(TENANT_ID, req);
+
+        // "email" upper-cased, "bogus" dropped, order preserved.
+        assertThat(resp.getDefaultNotificationChannels()).isEqualTo("EMAIL,WHATSAPP");
+    }
+
+    @Test
+    void updateSettings_withEmptyChannelList_keepsExisting() {
+        TenantSettings settings = TenantSettings.builder().defaultNotificationChannels("SMS").build();
+        when(settingsRepository.findByTenantId(TENANT_ID)).thenReturn(Optional.of(settings));
+        when(settingsRepository.save(any(TenantSettings.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UpdateTenantSettingsRequest req = UpdateTenantSettingsRequest.builder()
+                .notificationChannels(List.of("nonsense"))
+                .build();
+
+        TenantSettingsResponse resp = tenantService.updateSettings(TENANT_ID, req);
+
+        assertThat(resp.getDefaultNotificationChannels()).isEqualTo("SMS");
+    }
+
+    @Test
+    void updateLogo_storesFileAndRecordsReference() {
+        TenantSettings settings = TenantSettings.builder().build();
+        when(settingsRepository.findByTenantId(TENANT_ID)).thenReturn(Optional.of(settings));
+        when(settingsRepository.save(any(TenantSettings.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(assetStorage.storeLogo(eq(TENANT_ID), any())).thenReturn(TENANT_ID + "/abc__logo.png");
+
+        MultipartFile file = new MockMultipartFile(
+                "logoFile", "logo.png", "image/png", new byte[]{1, 2, 3});
+
+        TenantSettingsResponse resp = tenantService.updateLogo(TENANT_ID, file);
+
+        assertThat(resp.getLogoReference()).isEqualTo(TENANT_ID + "/abc__logo.png");
+        verify(assetStorage).storeLogo(TENANT_ID, file);
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────

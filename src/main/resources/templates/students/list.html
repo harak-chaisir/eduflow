@@ -13,15 +13,6 @@
     <div class="stack"
          th:with="stampClass=${ {'LEAD':'stamp--empty','QUALIFIED':'stamp--pending','ACTIVE':'stamp--approved','ENROLLED':'stamp--needs_revision','INACTIVE':'stamp--rejected'} }">
 
-        <!-- ── Flash messages ─────────────────────────────────────────────── -->
-        <div th:if="${successMessage}" class="flash flash--success">
-            <i data-lucide="check-circle-2"></i>
-            <span th:text="${successMessage}">Saved.</span>
-        </div>
-        <div th:if="${errorMessage}" class="flash flash--error">
-            <i data-lucide="alert-circle"></i>
-            <span th:text="${errorMessage}">Error.</span>
-        </div>
 
         <!-- ── Page header ─────────────────────────────────────────────────── -->
         <div class="page-head">
@@ -84,6 +75,12 @@
         <!-- ── Results — this div is the HTMX swap target ─────────────────── -->
         <div id="student-results" th:fragment="studentResults"
              th:with="stampClass=${ {'LEAD':'stamp--empty','QUALIFIED':'stamp--pending','ACTIVE':'stamp--approved','ENROLLED':'stamp--needs_revision','INACTIVE':'stamp--rejected'} }">
+
+            <!-- Toast markers carried inside the swapped fragment (e.g. after a delete) -->
+            <span th:if="${successMessage}" data-toast data-toast-type="success"
+                  th:data-toast-message="${successMessage}"></span>
+            <span th:if="${errorMessage}" data-toast data-toast-type="error"
+                  th:data-toast-message="${errorMessage}"></span>
 
             <p class="page-head__sub" style="margin-bottom: var(--space-3);">
                 <span th:text="${studentsPage.totalElements}">0</span> student(s) found

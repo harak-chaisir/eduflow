@@ -27,9 +27,12 @@ docker compose down -v && docker compose up -d   # wipe data + restart fresh
 ./mvnw test -Dtest=StudentServiceTest#registerStudent_whenEmailExists_throws  # single method
 ./mvnw package -DskipTests                # build jar
 
-# Tailwind CSS (also runs automatically in Maven's generate-resources phase)
-npm run build:css                         # one-shot minified build
-npm run watch:css                         # rebuild on change during dev
+# Frontend assets (build:css also runs automatically in Maven's generate-resources phase)
+npm run build:css                         # one-shot minified Tailwind build
+npm run watch:css                         # rebuild Tailwind on change during dev
+npm run build:htmx                        # copy htmx.min.js into static/js/
+npm run build:icons                       # copy lucide.js into static/js/
+npm run build                             # build:css + build:icons + build:htmx
 ```
 
 Dev login (seeded by Flyway `V4`): `admin@eduflow.com` / `Admin@1234` (ROLE_SUPER_ADMIN).
@@ -79,6 +82,28 @@ entity and exposes `getTenantId()`/`getUserId()`. Authorities are the raw role n
 
 **Errors:** `exception/GlobalExceptionHandler` (`@RestControllerAdvice`) maps domain exceptions to
 a consistent `ErrorResponse` envelope (`status`, `error`, `message`, `timestamp`, `path`).
+
+**Frontend is Thymeleaf + Tailwind CSS + HTMX — no SPA, no build-step JS framework.**
+- **Tailwind** (v3, `tailwind.config.js`) generates utilities into `static/css/tailwind.css` from
+  the input file `src/main/frontend/tailwind.css`. The config scans `templates/**/*.html` for class
+  names and extends the theme with the EduFlow `brand`/`accent` palettes and the `sans`/`display`/
+  `mono` font families. The brand colors map 1-to-1 to the CSS custom-property design tokens in the
+  hand-written `static/css/eduflow.css` — keep the two in sync if you touch either. `@tailwindcss/forms`
+  is enabled. Lucide icons are rendered from `<i data-lucide="...">` elements via `static/js/lucide.js`.
+- **HTMX** (v2, `static/js/htmx.min.js`) drives all in-page interactivity — live search, pagination,
+  status changes, row deletes — through `hx-get`/`hx-post`/`hx-target`/`hx-trigger` attributes on
+  Thymeleaf templates (use `th:hx-get`/`th:hx-post` when the URL needs Thymeleaf expression building).
+  The server responds with a **Thymeleaf fragment, not a full page**: a `@Controller` method returns
+  e.g. `"students/list :: studentResults"` when the request is HTMX, and the full `"students/list"`
+  view otherwise. Branch on the `HX-Request` header (`@RequestHeader(value = "HX-Request", required = false)`)
+  to decide — see `StudentWebController` and `DocumentViewController`.
+- **CSRF for HTMX:** the layout exposes the token via `<meta name="csrf-token">` / `<meta name="csrf-header">`,
+  and `static/js/eduflow.js` adds it to every request on the `htmx:configRequest` event. After a swap,
+  `htmx:afterSwap` re-initialises Lucide icons and re-binds menu behaviour — re-bind any new JS-driven
+  widgets there too, since swapped-in DOM is not covered by initial `DOMContentLoaded` handlers.
+- **Layout:** all pages render through the `fragments/layout.html :: layout(pageTitle, breadcrumb, activeNav, content)`
+  fragment (sidebar + topbar + content slot). Page-specific scripts/styles live in `eduflow.css`/`eduflow.js`,
+  not inline.
 
 ## Conventions that bite if missed
 

@@ -32,11 +32,9 @@
             </div>
         </div>
 
-        <!-- Global error (e.g. duplicate email) -->
-        <div th:if="${errorMessage}" class="flash flash--error">
-            <i data-lucide="alert-circle"></i>
-            <span th:text="${errorMessage}">Error</span>
-        </div>
+        <!-- Global error (e.g. duplicate email) — shown as a toast -->
+        <span th:if="${errorMessage}" data-toast data-toast-type="error"
+              th:data-toast-message="${errorMessage}"></span>
 
         <!-- ── Form ──────────────────────────────────────────────────────────── -->
         <form th:action="${isEdit} ? @{/students/{id}/edit(id=${studentId})} : @{/students/new}"

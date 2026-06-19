@@ -7,15 +7,13 @@
 <body>
 <th:block th:fragment="content">
 
-    <div class="stack"
+    <div class="stack" id="tenantPanels" th:fragment="tenantPanels"
          th:with="stampClass=${ {'ACTIVE':'stamp--approved','SUSPENDED':'stamp--pending','INACTIVE':'stamp--rejected'} }">
 
-        <div th:if="${successMessage}" class="flash flash--success">
-            <i data-lucide="check-circle-2"></i><span th:text="${successMessage}">Saved.</span>
-        </div>
-        <div th:if="${errorMessage}" class="flash flash--error">
-            <i data-lucide="alert-circle"></i><span th:text="${errorMessage}">Error.</span>
-        </div>
+        <span th:if="${successMessage}" data-toast data-toast-type="success"
+              th:data-toast-message="${successMessage}"></span>
+        <span th:if="${errorMessage}" data-toast data-toast-type="error"
+              th:data-toast-message="${errorMessage}"></span>
 
         <div class="page-head">
             <div>
@@ -54,7 +52,10 @@
             <div class="card">
                 <div class="card__header"><h3 class="card__title">Change status</h3></div>
                 <div class="card__body">
-                    <form method="post" th:action="@{/tenants/{id}/status(id=${tenant.id})}" class="stack">
+                    <form method="post" th:action="@{/tenants/{id}/status(id=${tenant.id})}" class="stack"
+                          th:hx-post="@{/tenants/{id}/status(id=${tenant.id})}"
+                          hx-target="#tenantPanels" hx-swap="outerHTML">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                         <div class="field">
                             <label class="field__label" for="status">Status</label>
                             <select class="select" id="status" name="status">
@@ -77,7 +78,10 @@
             <div class="card">
                 <div class="card__header"><h3 class="card__title">Change plan</h3></div>
                 <div class="card__body">
-                    <form method="post" th:action="@{/tenants/{id}/plan(id=${tenant.id})}" class="stack">
+                    <form method="post" th:action="@{/tenants/{id}/plan(id=${tenant.id})}" class="stack"
+                          th:hx-post="@{/tenants/{id}/plan(id=${tenant.id})}"
+                          hx-target="#tenantPanels" hx-swap="outerHTML">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                         <div class="field">
                             <label class="field__label" for="plan">Plan</label>
                             <select class="select" id="plan" name="plan">

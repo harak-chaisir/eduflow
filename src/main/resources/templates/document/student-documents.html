@@ -11,16 +11,6 @@
 <body>
 <th:block th:fragment="content">
 
-    <!-- Toast area — OOB-swapped by HTMX document actions -->
-    <div id="dossierToast">
-        <div th:if="${successMessage}" class="flash flash--success" role="alert">
-            <i data-lucide="check-circle-2"></i><span th:text="${successMessage}">Saved.</span>
-        </div>
-        <div th:if="${errorMessage}" class="flash flash--error" role="alert">
-            <i data-lucide="alert-circle"></i><span th:text="${errorMessage}">Error.</span>
-        </div>
-    </div>
-
     <div class="stack"
          th:with="stamp=${ {'PENDING':'stamp--pending','APPROVED':'stamp--approved','REJECTED':'stamp--rejected','NEEDS_REVISION':'stamp--needs_revision'} }">
 
@@ -50,6 +40,12 @@
         <div id="dossierContent"
              th:fragment="dossierContent"
              th:with="stamp=${ {'PENDING':'stamp--pending','APPROVED':'stamp--approved','REJECTED':'stamp--rejected','NEEDS_REVISION':'stamp--needs_revision'} }">
+
+            <!-- Toast markers carried inside the swapped fragment (upload/verify/resubmit/delete) -->
+            <span th:if="${successMessage}" data-toast data-toast-type="success"
+                  th:data-toast-message="${successMessage}"></span>
+            <span th:if="${errorMessage}" data-toast data-toast-type="error"
+                  th:data-toast-message="${errorMessage}"></span>
 
             <!-- Readiness + status summary -->
             <section class="card">

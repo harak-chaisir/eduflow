@@ -8,6 +8,7 @@ import com.eduflow.tenant.event.TenantEvents;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -15,9 +16,13 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Core service for the Tenant Management module (PRD §6–§9, §12).
@@ -39,6 +44,7 @@ public class TenantService {
     private final TenantSettingsRepository settingsRepository;
     private final AuditService auditService;
     private final ApplicationEventPublisher events;
+    private final TenantAssetStorage assetStorage;
 
     // ── Provisioning ───────────────────────────────────────────────────────────
 
@@ -141,13 +147,65 @@ public class TenantService {
 
         if (req.getBrandColor() != null)                 settings.setBrandColor(req.getBrandColor());
         if (req.getLogoReference() != null)              settings.setLogoReference(req.getLogoReference());
-        if (req.getDefaultNotificationChannels() != null) settings.setDefaultNotificationChannels(req.getDefaultNotificationChannels());
         if (req.getDefaultWorkflowTemplateId() != null)  settings.setDefaultWorkflowTemplateId(req.getDefaultWorkflowTemplateId());
         if (req.getRequiredDocumentsOverride() != null)  settings.setRequiredDocumentsOverride(req.getRequiredDocumentsOverride());
+
+        // Notification channels: the multi-select list (when present) wins and is normalised to
+        // a CSV of valid channel names; otherwise fall back to a raw CSV (REST/back-compat).
+        String channelsCsv = normaliseChannels(req.getNotificationChannels());
+        if (channelsCsv != null) {
+            settings.setDefaultNotificationChannels(channelsCsv);
+        } else if (req.getDefaultNotificationChannels() != null) {
+            settings.setDefaultNotificationChannels(req.getDefaultNotificationChannels());
+        }
 
         TenantSettings saved = settingsRepository.save(settings);
         auditService.publish(id, resolvedUserId(), AuditAction.TENANT_SETTINGS_UPDATED, "TENANT", id);
         return TenantSettingsResponse.from(saved);
+    }
+
+    /**
+     * Stores an uploaded logo image for the tenant and records its storage key on the settings
+     * row. Any previously stored logo is removed best-effort.
+     */
+    public TenantSettingsResponse updateLogo(UUID id, MultipartFile file) {
+        assertCanAccess(id);
+        TenantSettings settings = findSettingsOrThrow(id);
+
+        String previousKey = settings.getLogoReference();
+        String key = assetStorage.storeLogo(id, file);
+        settings.setLogoReference(key);
+        TenantSettings saved = settingsRepository.save(settings);
+
+        if (previousKey != null && !previousKey.equals(key)) {
+            assetStorage.delete(previousKey);
+        }
+        auditService.publish(id, resolvedUserId(), AuditAction.TENANT_SETTINGS_UPDATED, "TENANT", id);
+        return TenantSettingsResponse.from(saved);
+    }
+
+    /** Loads the tenant's stored logo, or empty if none is set. */
+    @Transactional(readOnly = true)
+    public Optional<Resource> loadLogo(UUID id) {
+        assertCanAccess(id);
+        TenantSettings settings = findSettingsOrThrow(id);
+        if (settings.getLogoReference() == null) {
+            return Optional.empty();
+        }
+        return Optional.of(assetStorage.loadLogo(settings.getLogoReference()));
+    }
+
+    /** Normalises a UI channel list to a CSV of valid, de-duplicated channel names, or null. */
+    private String normaliseChannels(List<String> channels) {
+        if (channels == null) {
+            return null;
+        }
+        String csv = channels.stream()
+                .filter(NotificationChannel::isValid)
+                .map(c -> c.trim().toUpperCase())
+                .distinct()
+                .collect(Collectors.joining(","));
+        return csv.isEmpty() ? null : csv;
     }
 
     // ── Lifecycle (super-admin) ──────────────────────────────────────────────────

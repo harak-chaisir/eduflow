@@ -43,6 +43,9 @@ is fully isolated between tenants.
 | Database | PostgreSQL | 17 |
 | Security | Spring Security | 6.x |
 | Templating | Thymeleaf + thymeleaf-extras-springsecurity6 | (managed by Boot) |
+| CSS | Tailwind CSS (+ @tailwindcss/forms) | 3.4 |
+| Interactivity | HTMX | 2.0 |
+| Icons | Lucide | 0.46 |
 | Validation | Spring Validation (Jakarta Bean Validation) | (managed by Boot) |
 | Observability | Spring Actuator | (managed by Boot) |
 | Boilerplate | Lombok | (managed by Boot) |
@@ -85,9 +88,16 @@ eduflow/
     │   │   ├── security/                       # Spring Security config, JWT, UserDetailsService
     │   │   ├── config/                         # Google Drive client, Mail config, third-party beans
     │   │   └── exception/                      # @RestControllerAdvice + error DTOs
+    │   ├── frontend/
+    │   │   └── tailwind.css                    # Tailwind input (@tailwind base/components/utilities)
     │   └── resources/
     │       ├── application.properties
     │       ├── templates/                      # Thymeleaf templates
+    │       │   ├── fragments/                  # layout.html (shared shell), navbar
+    │       │   └── {domain}/                   # one folder per feature (students/, document/, …)
+    │       ├── static/
+    │       │   ├── css/                        # tailwind.css (generated), eduflow.css (design tokens)
+    │       │   └── js/                         # htmx.min.js, lucide.js (copied), eduflow.js (app glue)
     │       └── db/migration/                   # Flyway SQL (V{n}__{desc}.sql)
     │           ├── V1__create_tenants_table.sql
     │           ├── V2__create_roles_table.sql
@@ -292,7 +302,62 @@ public class Student extends BaseEntity {
 
 ---
 
-## 8. Java / Spring Conventions
+## 8. Frontend / View Conventions (Thymeleaf + Tailwind + HTMX)
+
+The UI is **server-rendered Thymeleaf styled with Tailwind CSS and made interactive with HTMX** —
+there is no SPA, no client-side router, and no JS build step beyond copying vendor files.
+
+### Layout & templates
+
+- Every page renders through the shared shell fragment
+  `fragments/layout.html :: layout(pageTitle, breadcrumb, activeNav, content)` (sidebar + topbar +
+  content slot). Do not duplicate the shell per page.
+- Templates live under `src/main/resources/templates/{domain}/` — one folder per feature, mirroring
+  the Java package layout. Shared fragments go in `templates/fragments/`.
+- Use `thymeleaf-extras-springsecurity6` (`sec:authorize`, `sec:authentication`) for role-gated UI.
+- Icons are Lucide elements: `<i data-lucide="icon-name"></i>` (rendered by `static/js/lucide.js`).
+
+### Tailwind CSS
+
+- Tailwind v3 config is `tailwind.config.js`; it scans `templates/**/*.html` for class names and
+  extends the theme with the `brand`/`accent` color palettes and `sans`/`display`/`mono` fonts.
+- The input file is `src/main/frontend/tailwind.css`; the generated output is
+  `static/css/tailwind.css` (built by `npm run build:css`, also wired into Maven `generate-resources`).
+  **Never hand-edit `static/css/tailwind.css`** — it is generated.
+- The `brand` Tailwind colors map 1-to-1 to the CSS custom-property design tokens in the hand-written
+  `static/css/eduflow.css`. Keep the two in sync when changing brand colors.
+- `@tailwindcss/forms` is enabled for form-control styling.
+
+### HTMX
+
+- Use `hx-get` / `hx-post` / `hx-target` / `hx-trigger` / `hx-swap` for in-page interactivity
+  (live search, pagination, status changes, deletes). Use the `th:hx-get` / `th:hx-post` variants
+  when the URL must be built from a Thymeleaf expression (e.g. `@{/students/{id}/delete(id=${student.id})}`).
+- The server returns a **Thymeleaf fragment, not a full page**, to HTMX requests. The `@Controller`
+  branches on the `HX-Request` header and returns e.g. `"students/list :: studentResults"` for HTMX
+  vs the full `"students/list"` view otherwise:
+  ```java
+  @PostMapping("/students/{id}/status")
+  String changeStatus(@PathVariable UUID id,
+                      @RequestHeader(value = "HX-Request", required = false) String htmxRequest,
+                      Model model) {
+      // ...mutate via service, add fragment model attributes...
+      if (htmxRequest != null) return "students/detail :: statusCard";
+      return "redirect:/students/" + id;
+  }
+  ```
+- **CSRF:** the layout exposes the token via `<meta name="csrf-token">` / `<meta name="csrf-header">`,
+  and `static/js/eduflow.js` attaches it to every HTMX request on the `htmx:configRequest` event.
+  Don't reinvent this per page.
+- After a swap, `htmx:afterSwap` re-initialises Lucide icons and re-binds menu widgets. Any new
+  JS-driven behaviour on swapped-in DOM must be (re-)bound there, not only on `DOMContentLoaded`.
+- Vendor JS (`htmx.min.js`, `lucide.js`) is copied into `static/js/` by `npm run build:htmx` /
+  `build:icons`; application glue lives in `static/js/eduflow.js`. Keep page logic out of inline
+  `<script>` tags.
+
+---
+
+## 9. Java / Spring Conventions
 
 ### General
 
@@ -368,7 +433,7 @@ public class Student extends BaseEntity {
 
 ---
 
-## 9. Security Conventions
+## 10. Security Conventions
 
 - Every query on tenant-scoped data **must** filter by the authenticated user's `tenantId`
 - Resolve `tenantId` from the `SecurityContextHolder` principal — never from a request param
@@ -382,7 +447,7 @@ public class Student extends BaseEntity {
 
 ---
 
-## 10. Testing Conventions
+## 11. Testing Conventions
 
 - `@SpringBootTest` — full context integration tests
 - `@DataJpaTest` — repository slice tests
@@ -398,7 +463,7 @@ public class Student extends BaseEntity {
 
 ---
 
-## 11. Docker / Local Development
+## 12. Docker / Local Development
 
 ```bash
 # Start the database
@@ -425,7 +490,7 @@ docker compose down -v && docker compose up -d
 
 ---
 
-## 12. What Copilot Should Always Do
+## 13. What Copilot Should Always Do
 
 - ✅ Extend `BaseEntity` for every new JPA entity
 - ✅ Use Lombok annotations — never write manual getters/setters/constructors
@@ -440,8 +505,11 @@ docker compose down -v && docker compose up -d
 - ✅ Record an `AuditEvent` for every state-changing action on student/document/application/visa
 - ✅ Use `@Enumerated(EnumType.STRING)` on all enum-mapped JPA columns
 - ✅ Validate enum transitions in the service layer (e.g. cannot move directly from `LEAD` to `ENROLLED`)
+- ✅ Render the UI with Thymeleaf, style with Tailwind utility classes, and add interactivity with HTMX
+- ✅ Return a Thymeleaf fragment (`view :: fragment`) for HTMX requests; branch on the `HX-Request` header
+- ✅ Build pages through the `fragments/layout.html :: layout(...)` shell fragment
 
-## 13. What Copilot Should Never Do
+## 14. What Copilot Should Never Do
 
 - ❌ Add `id`, `createdAt`, `updatedAt`, `createdBy`, or `updatedBy` directly to an entity
 - ❌ Use `java.util.Date`, `java.sql.Timestamp`, or `LocalDateTime` for persistence
@@ -455,3 +523,7 @@ docker compose down -v && docker compose up -d
 - ❌ Use Hibernate `ddl-auto` values other than `validate`
 - ❌ Return `password_hash`, Drive access tokens, or any credential in an API response
 - ❌ Delete or update rows in the `audit_events` table — it is append-only
+- ❌ Hand-edit the generated `static/css/tailwind.css` — change `tailwind.css` input / `tailwind.config.js` and rebuild
+- ❌ Introduce a client-side JS framework or SPA router — the stack is server-rendered Thymeleaf + HTMX
+- ❌ Bury page logic in inline `<script>` tags — put it in `static/js/eduflow.js`
+- ❌ Send a full HTML page in response to an HTMX request — return only the targeted fragment

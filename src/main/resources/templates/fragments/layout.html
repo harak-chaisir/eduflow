@@ -16,6 +16,7 @@
     <!-- Tailwind utilities (build-time generated) + the EduFlow design system -->
     <link rel="stylesheet" th:href="@{/css/tailwind.css}">
     <link rel="stylesheet" th:href="@{/css/eduflow.css}">
+    <link rel="stylesheet" th:href="@{/css/toastify.css}">
 
     <!-- CSRF tokens for HTMX AJAX requests -->
     <meta name="csrf-token"  th:content="${_csrf.token}">
@@ -157,6 +158,11 @@
 
 <script th:src="@{/js/htmx.min.js}"></script>
 <script th:src="@{/js/lucide.js}"></script>
+<script th:src="@{/js/toastify.js}"></script>
 <script th:src="@{/js/eduflow.js}"></script>
+
+<!-- DevTools LiveReload client (dev profile only) — auto-refreshes on template/CSS/JS change -->
+<script th:if="${@environment.getProperty('eduflow.livereload.enabled', 'false') == 'true'}"
+        src="http://localhost:35729/livereload.js"></script>
 </body>
 </html>

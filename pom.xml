@@ -78,6 +78,14 @@
 			<optional>true</optional>
 		</dependency>
 		<dependency>
+			<!-- Dev-time auto-restart + LiveReload server (port 35729). Excluded from the
+			     repackaged jar by spring-boot-maven-plugin, so it never ships to prod. -->
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator-test</artifactId>
 			<scope>test</scope>
@@ -126,6 +134,11 @@
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
+					<!-- `./mvnw spring-boot:run` activates the dev profile (filesystem template/
+					     static serving + LiveReload). A packaged `java -jar` run does not. -->
+					<profiles>
+						<profile>dev</profile>
+					</profiles>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -212,6 +225,13 @@
 					<goals><goal>npm</goal></goals>
 					<phase>generate-resources</phase>
 					<configuration><arguments>run build:htmx</arguments></configuration>
+				</execution>
+				<!-- 6. Copy Toastify runtime (toast notifications) into static resources -->
+				<execution>
+					<id>build-toast</id>
+					<goals><goal>npm</goal></goals>
+					<phase>generate-resources</phase>
+					<configuration><arguments>run build:toast</arguments></configuration>
 				</execution>
 				</executions>
 			</plugin>
