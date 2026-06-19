@@ -21,10 +21,10 @@
               th:hx-post="@{/documents/{id}/verify(id=${document.id})}"
               hx-target="#dossierContent"
               hx-swap="outerHTML">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
             <div class="modal__body stack">
-                <p style="margin:0; color:var(--muted);">
-                    <span style="font-weight:600; color:var(--ink);"
+                <p class="is-flush text-muted">
+                    <span class="text-strong"
                           th:text="${document.documentTypeLabel}">Document</span>
                     — uploaded <span th:text="${document.originalFilename}">file</span>
                 </p>

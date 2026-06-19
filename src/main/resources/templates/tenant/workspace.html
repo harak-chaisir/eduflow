@@ -20,13 +20,10 @@
             <div class="card" id="profileCard" th:fragment="profileCard">
                 <div class="card__header"><h3 class="card__title">Profile</h3></div>
                 <div class="card__body">
-                    <span th:if="${profileMessage}" data-toast data-toast-type="success"
-                          th:data-toast-message="${profileMessage}"></span>
-                    <span th:if="${profileError}" data-toast data-toast-type="error"
-                          th:data-toast-message="${profileError}"></span>
+                    <th:block th:replace="~{fragments/components :: toastMarkers(${profileMessage}, ${profileError})}"></th:block>
                     <form method="post" th:action="@{/workspace/profile}" class="stack"
                           hx-post="/workspace/profile" hx-target="#profileCard" hx-swap="outerHTML">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
                         <div class="field">
                             <label class="field__label" for="name">Display name</label>
                             <input class="input" id="name" type="text" name="name" th:value="${tenant.name}" />
@@ -62,44 +59,36 @@
             <div class="card" id="settingsCard" th:fragment="settingsCard">
                 <div class="card__header"><h3 class="card__title">Settings</h3></div>
                 <div class="card__body">
-                    <span th:if="${settingsMessage}" data-toast data-toast-type="success"
-                          th:data-toast-message="${settingsMessage}"></span>
-                    <span th:if="${settingsError}" data-toast data-toast-type="error"
-                          th:data-toast-message="${settingsError}"></span>
+                    <th:block th:replace="~{fragments/components :: toastMarkers(${settingsMessage}, ${settingsError})}"></th:block>
                     <form method="post" th:action="@{/workspace/settings}" class="stack"
                           enctype="multipart/form-data"
                           hx-post="/workspace/settings" hx-target="#settingsCard" hx-swap="outerHTML"
                           hx-encoding="multipart/form-data">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
 
                         <!-- Brand colour: native colour picker synced with an editable hex field -->
                         <div class="field" data-color-field>
                             <label class="field__label" for="brandColor">Brand colour</label>
-                            <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="color-field">
                                 <input type="color" data-color-picker aria-label="Pick brand colour"
                                        th:value="${settings.brandColor != null ? settings.brandColor : '#0f766e'}"
-                                       style="width:44px; height:40px; padding:2px; cursor:pointer;
-                                              border:1px solid var(--line); border-radius:var(--radius-md);
-                                              background:var(--surface);" />
-                                <input class="input" id="brandColor" type="text" name="brandColor"
+                                       class="color-field__picker" />
+                                <input class="input color-field__input" id="brandColor" type="text" name="brandColor"
                                        data-color-hex th:value="${settings.brandColor}"
-                                       placeholder="#0f766e" pattern="#?[0-9a-fA-F]{6}"
-                                       style="flex:1;" />
+                                       placeholder="#0f766e" pattern="#?[0-9a-fA-F]{6}" />
                             </div>
                         </div>
 
                         <!-- Logo: current preview + replace upload -->
                         <div class="field">
                             <label class="field__label" for="logoFile">Logo</label>
-                            <div th:if="${settings.logoReference}" style="margin-bottom:10px;">
+                            <div th:if="${settings.logoReference}" class="logo-preview">
                                 <img th:src="@{/workspace/logo(v=${settings.updatedAt})}" alt="Current logo"
-                                     style="max-height:56px; max-width:180px; padding:4px;
-                                            border:1px solid var(--line); border-radius:var(--radius-md);
-                                            background:var(--surface);" />
+                                     class="logo-preview__image" />
                             </div>
                             <input class="input" id="logoFile" type="file" name="logoFile" accept="image/*"
                                    data-file-input />
-                            <p class="form-section__hint" style="margin-top:6px;">
+                            <p class="form-section__hint form-section__hint--compact">
                                 PNG, JPG or SVG. Uploading replaces the current logo.
                             </p>
                         </div>

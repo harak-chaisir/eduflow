@@ -50,6 +50,20 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     List<User> findActiveByTenantIdAndRoleName(@Param("tenantId") UUID tenantId,
                                                @Param("roleName") String roleName);
 
+    /**
+     * Lists users in a tenant who hold the given role, regardless of account status,
+     * ordered by name. Used by the super-admin "reset admin password" picker so that
+     * not-yet-activated ({@code PENDING_VERIFICATION}) admins are selectable too.
+     */
+    @Query("""
+            SELECT DISTINCT u FROM User u JOIN u.roles r
+            WHERE u.tenant.id = :tenantId
+              AND r.name = :roleName
+            ORDER BY u.firstName, u.lastName
+            """)
+    List<User> findByTenantIdAndRoleName(@Param("tenantId") UUID tenantId,
+                                         @Param("roleName") String roleName);
+
     /** Checks whether an email is already registered within a tenant. */
     boolean existsByEmailIgnoreCaseAndTenantId(String email, UUID tenantId);
 }

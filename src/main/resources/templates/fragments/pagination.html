@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+    Reusable pagination control.
+
+    Params:
+      page        — a Spring Data Page<?> (provides number, size, totalPages, …)
+      basePath    — full-navigation URL base (e.g. '/students')
+      hxPath      — HTMX partial-search URL base (e.g. '/students/search')
+      hxTarget    — CSS selector of the swap target (e.g. '#student-results')
+      filterQuery — pre-built, URL-encoded filter suffix beginning with '&'
+                    (e.g. '&name=John&status=ACTIVE'); pass '' when no filters.
+                    Build it once at the call site with th:with so this fragment
+                    stays agnostic of which filters a given page uses.
+-->
+<div th:fragment="pagination(page, basePath, hxPath, hxTarget, filterQuery)" class="pagination">
+    <p class="pagination__info">
+        Showing
+        <strong th:text="${page.number * page.size + 1}">1</strong>–<strong
+            th:text="${page.number * page.size + page.numberOfElements}">20</strong>
+        of <strong th:text="${page.totalElements}">0</strong>
+    </p>
+
+    <div class="pagination__pages">
+        <a th:if="${page.hasPrevious()}" class="page-btn"
+           th:href="@{${basePath}(page=${page.number - 1}, size=${page.size})} + ${filterQuery}"
+           th:hx-get="@{${hxPath}(page=${page.number - 1}, size=${page.size})} + ${filterQuery}"
+           th:hx-target="${hxTarget}" hx-push-url="true">
+            <i data-lucide="chevron-left" class="icon-sm"></i>
+        </a>
+        <span th:unless="${page.hasPrevious()}" class="page-btn is-disabled">
+            <i data-lucide="chevron-left" class="icon-sm"></i>
+        </span>
+
+        <th:block th:with="startPage=${T(java.lang.Math).max(0, page.number - 2)},
+                           endPage=${T(java.lang.Math).min(page.totalPages - 1, page.number + 2)}">
+            <th:block th:each="i : ${#numbers.sequence(startPage, endPage)}">
+                <a th:if="${i != page.number}" class="page-btn"
+                   th:href="@{${basePath}(page=${i}, size=${page.size})} + ${filterQuery}"
+                   th:hx-get="@{${hxPath}(page=${i}, size=${page.size})} + ${filterQuery}"
+                   th:hx-target="${hxTarget}" hx-push-url="true"
+                   th:text="${i + 1}">1</a>
+                <span th:if="${i == page.number}" class="page-btn is-active" th:text="${i + 1}">1</span>
+            </th:block>
+        </th:block>
+
+        <a th:if="${page.hasNext()}" class="page-btn"
+           th:href="@{${basePath}(page=${page.number + 1}, size=${page.size})} + ${filterQuery}"
+           th:hx-get="@{${hxPath}(page=${page.number + 1}, size=${page.size})} + ${filterQuery}"
+           th:hx-target="${hxTarget}" hx-push-url="true">
+            <i data-lucide="chevron-right" class="icon-sm"></i>
+        </a>
+        <span th:unless="${page.hasNext()}" class="page-btn is-disabled">
+            <i data-lucide="chevron-right" class="icon-sm"></i>
+        </span>
+    </div>
+</div>
+
+</body>
+</html>

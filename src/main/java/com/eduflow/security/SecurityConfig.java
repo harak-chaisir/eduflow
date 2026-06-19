@@ -40,7 +40,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public resources
                 .requestMatchers("/login", "/error", "/set-password").permitAll()
-                .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
+                .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico", "/favicon.svg").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 // Everything else requires authentication
                 .anyRequest().authenticated()

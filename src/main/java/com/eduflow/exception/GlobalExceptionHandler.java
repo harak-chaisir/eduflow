@@ -6,10 +6,19 @@ import com.eduflow.document.storage.DocumentStorageException;
 import com.eduflow.student.DuplicateStudentException;
 import com.eduflow.student.InvalidStudentStatusTransitionException;
 import com.eduflow.student.StudentNotFoundException;
+import com.eduflow.task.InvalidTaskStatusTransitionException;
+import com.eduflow.task.TaskNotFoundException;
 import com.eduflow.tenant.DuplicateSlugException;
 import com.eduflow.tenant.InvalidTenantStatusTransitionException;
 import com.eduflow.tenant.TenantLimitExceededException;
 import com.eduflow.tenant.TenantNotFoundException;
+import com.eduflow.workflow.DuplicateWorkflowNameException;
+import com.eduflow.workflow.InvalidWorkflowGraphException;
+import com.eduflow.workflow.InvalidWorkflowTransitionException;
+import com.eduflow.workflow.RequiredDocumentsMissingException;
+import com.eduflow.workflow.StudentWorkflowNotFoundException;
+import com.eduflow.workflow.WorkflowArchivedException;
+import com.eduflow.workflow.WorkflowTemplateNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -66,6 +75,14 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage(), request);
     }
 
+    @ExceptionHandler({WorkflowTemplateNotFoundException.class, StudentWorkflowNotFoundException.class,
+            TaskNotFoundException.class})
+    public ResponseEntity<ErrorResponse> handleWorkflowNotFound(
+            RuntimeException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage(), request);
+    }
+
     // ── 409 Conflict ─────────────────────────────────────────────────────────
 
     @ExceptionHandler(DuplicateStudentException.class)
@@ -89,6 +106,13 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, CONFLICT, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(DuplicateWorkflowNameException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateWorkflowName(
+            DuplicateWorkflowNameException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.CONFLICT, CONFLICT, ex.getMessage(), request);
+    }
+
     // ── 422 Unprocessable Entity ─────────────────────────────────────────────
 
     @ExceptionHandler(InvalidStudentStatusTransitionException.class)
@@ -108,6 +132,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidTenantStatusTransitionException.class)
     public ResponseEntity<ErrorResponse> handleInvalidTenantStatusTransition(
             InvalidTenantStatusTransitionException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.UNPROCESSABLE_CONTENT, UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler({InvalidWorkflowGraphException.class, WorkflowArchivedException.class,
+            InvalidWorkflowTransitionException.class, RequiredDocumentsMissingException.class,
+            InvalidTaskStatusTransitionException.class})
+    public ResponseEntity<ErrorResponse> handleInvalidWorkflow(
+            RuntimeException ex, HttpServletRequest request) {
 
         return build(HttpStatus.UNPROCESSABLE_CONTENT, UNPROCESSABLE_ENTITY, ex.getMessage(), request);
     }

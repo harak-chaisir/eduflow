@@ -262,6 +262,12 @@ h1, h2, h3, h4 {
     gap: 1px;
 }
 
+.topbar__left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
 .topbar__title h1 {
     font-size: 1.15rem;
 }
@@ -545,6 +551,43 @@ h1, h2, h3, h4 {
     box-shadow: inset 0 0 0 1px rgba(4, 120, 87, 0.25);
 }
 
+/*
+   Attribute-driven status colours — single source of truth shared by every
+   domain's lifecycle. A status pill renders via the statusStamp fragment with
+   data-status="<ENUM_NAME>"; adding a new status is one rule here, no template
+   change. Each group reuses the same palette as the legacy .stamp--* modifiers.
+*/
+.stamp[data-status='QUALIFIED'],
+.stamp[data-status='PENDING'],
+.stamp[data-status='SUSPENDED'] {
+    color: var(--status-pending-fg);
+    background-color: var(--status-pending-bg);
+}
+
+.stamp[data-status='ACTIVE'],
+.stamp[data-status='APPROVED'] {
+    color: var(--status-approved-fg);
+    background-color: var(--status-approved-bg);
+    box-shadow: inset 0 0 0 1px rgba(4, 120, 87, 0.25);
+}
+
+.stamp[data-status='INACTIVE'],
+.stamp[data-status='REJECTED'] {
+    color: var(--status-rejected-fg);
+    background-color: var(--status-rejected-bg);
+}
+
+.stamp[data-status='ENROLLED'],
+.stamp[data-status='NEEDS_REVISION'] {
+    color: var(--status-revision-fg);
+    background-color: var(--status-revision-bg);
+}
+
+.stamp[data-status='LEAD'] {
+    color: var(--status-empty-fg);
+    background-color: var(--status-empty-bg);
+}
+
 /* ----- Category sections + document rows -------------------------------- */
 .category {
     border-top: 1px solid var(--line);
@@ -691,6 +734,14 @@ h1, h2, h3, h4 {
     font-size: 0.8125rem;
 }
 
+.btn--full {
+    width: 100%;
+}
+
+.text-danger {
+    color: var(--status-rejected-fg);
+}
+
 .btn svg {
     width: 15px;
     height: 15px;
@@ -708,6 +759,12 @@ h1, h2, h3, h4 {
     font-size: 0.8125rem;
     font-weight: 600;
     color: var(--ink-soft);
+}
+
+.field__hint {
+    font-size: 0.8125rem;
+    color: var(--muted);
+    font-weight: 400;
 }
 
 .input,
@@ -1344,6 +1401,15 @@ h1, h2, h3, h4 {
     margin-bottom: 0;
 }
 
+.toolbar__field {
+    flex: 1 1 220px;
+}
+
+.toolbar__field--sm {
+    flex: 0 1 170px;
+    min-width: 170px;
+}
+
 .toolbar__search {
     position: relative;
     flex: 1 1 240px;
@@ -1360,6 +1426,10 @@ h1, h2, h3, h4 {
 
 .toolbar__search .input {
     padding-left: 38px;
+}
+
+.result-count {
+    margin-bottom: var(--space-3);
 }
 
 /* ----- Data table -------------------------------------------------------- */
@@ -1404,6 +1474,10 @@ h1, h2, h3, h4 {
     background-color: var(--surface-hover);
 }
 
+.cell-right {
+    text-align: right;
+}
+
 .table__primary {
     display: flex;
     align-items: center;
@@ -1418,6 +1492,10 @@ h1, h2, h3, h4 {
 .table__sub {
     font-size: 0.8125rem;
     color: var(--muted);
+}
+
+.table__mono {
+    font-size: 0.85rem;
 }
 
 .table__actions {
@@ -1539,6 +1617,10 @@ h1, h2, h3, h4 {
     margin: 0 0 var(--space-4);
 }
 
+.form-section__hint--compact {
+    margin-top: var(--space-2);
+}
+
 .form-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1582,6 +1664,143 @@ h1, h2, h3, h4 {
 
 .required-mark {
     color: var(--status-rejected-fg);
+}
+
+.form-shell {
+    max-width: 860px;
+}
+
+.inline-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.validation-summary {
+    margin-bottom: var(--space-5);
+}
+
+.color-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.color-field__picker {
+    width: 44px;
+    height: 40px;
+    padding: 2px;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+}
+
+.color-field__input {
+    flex: 1;
+}
+
+.logo-preview {
+    margin-bottom: 10px;
+}
+
+.logo-preview__image {
+    max-height: 56px;
+    max-width: 180px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+}
+
+.icon-muted-lg {
+    width: 40px;
+    height: 40px;
+    opacity: 0.4;
+}
+
+/* ----- Small presentation utilities (replace ad-hoc inline styles) ------- */
+.is-flush {
+    margin: 0;
+}
+
+.text-muted {
+    color: var(--muted);
+}
+
+.text-strong {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+.eyebrow--spaced {
+    margin-bottom: var(--space-2);
+}
+
+/* Large rounded-square avatar for profile headers. */
+.avatar--lg {
+    width: 64px;
+    height: 64px;
+    font-size: 1.5rem;
+    border-radius: 18px;
+}
+
+/* Student detail: profile title row + name + record id. */
+.profile-title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.profile-head__name {
+    font-size: 1.4rem;
+}
+
+.record-id {
+    font-size: 0.75rem;
+}
+
+/* Muted info row shown when status transitions are unavailable. */
+.status-note {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--muted);
+}
+
+.status-note p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* ----- Auth pages (login / set-password) -------------------------------- */
+.auth__heading {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    margin-bottom: var(--space-5);
+}
+
+.auth__heading--tight {
+    margin-bottom: var(--space-2);
+}
+
+.auth__sub--spaced {
+    margin-bottom: var(--space-5);
+}
+
+.auth__submit {
+    width: 100%;
+    margin-top: var(--space-2);
+}
+
+.flash--spaced {
+    margin-bottom: var(--space-4);
+}
+
+/* Title sitting directly under an inline back-link. */
+.page-head__title--stacked {
+    margin-top: 6px;
 }
 
 /* ----- Detail / profile -------------------------------------------------- */
@@ -1852,3 +2071,38 @@ h1, h2, h3, h4 {
 .user-menu__form {
     margin: 0;
 }
+
+/* ── Notification bell (topbar) + feed rows (Workflow module) ───────────────── */
+.notif-bell { position: relative; }
+.notif-bell__badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--color-danger, #dc2626);
+    color: #fff;
+    font-size: 10px;
+    line-height: 16px;
+    text-align: center;
+    font-weight: 700;
+}
+.notif-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.notif-row--unread { background: var(--color-surface-muted, rgba(37,99,235,.06)); }
+
+/* ── Workflow builder: stage colour dot ─────────────────────────────────────── */
+.stage-dot { display: inline-block; width: 10px; height: 10px; border-radius: 999px; margin-right: .5rem; vertical-align: middle; }
+.form-grid--inline { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border, #e5e7eb); }
+
+/* ── Workflow dashboard (KPI cards + stage bars) ───────────────────────────── */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
+.kpi .kpi__value { font-size: 1.75rem; font-weight: 800; line-height: 1.1; }
+.kpi .kpi__label { color: var(--color-text-muted, #6b7280); font-size: .8rem; margin-top: .25rem; }
+.bar-list { display: flex; flex-direction: column; gap: .6rem; }
+.bar-row { display: grid; grid-template-columns: 180px 1fr 40px; align-items: center; gap: .75rem; }
+.bar-row__label { font-size: .85rem; }
+.bar-row__track { background: var(--color-surface-muted, #f1f5f9); border-radius: 999px; height: 12px; overflow: hidden; }
+.bar-row__fill { height: 100%; background: var(--color-brand, #2563eb); border-radius: 999px; min-width: 2px; }
+.bar-row__value { text-align: right; font-size: .85rem; }

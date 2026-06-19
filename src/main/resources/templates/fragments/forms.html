@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+    Bound text input with label, validation state and error message.
+
+    Must be used inside a form that declares th:object="${…}" — the binding
+    context is inherited, so *{…} resolves against the command object.
+    The __${field}__ preprocessing turns the `field` string into a real
+    binding expression (e.g. field='firstName' -> th:field="*{firstName}").
+
+    Call with named parameters; omit any you don't need (they default to null).
+    NOTE: the fragment is intentionally declared WITHOUT a signature — Thymeleaf
+    requires every parameter of a signed fragment to be supplied, whereas a
+    signature-less fragment treats the named args as local variables and leaves
+    unspecified ones null (exactly the optional-argument behaviour we want).
+      ~{fragments/forms :: field(field='firstName', label='First name',
+                                 required=true, maxlength=100, placeholder='e.g. John')}
+
+    Params: field, label, type(default 'text'), placeholder, required(bool),
+            maxlength, pattern, span(bool -> field--span2), hint
+-->
+<div th:fragment="field"
+     class="field" th:classappend="${span} ? 'field--span2'">
+    <label class="field__label" th:for="${field}">
+        <span th:text="${label}">Label</span>
+        <span th:if="${required}" class="required-mark">*</span>
+    </label>
+    <input class="input" th:type="${type != null ? type : 'text'}" th:id="${field}"
+           th:field="*{__${field}__}"
+           th:classappend="${#fields.hasErrors(field)} ? 'is-invalid'"
+           th:maxlength="${maxlength}" th:placeholder="${placeholder}" th:pattern="${pattern}" />
+    <span class="field__error" th:if="${#fields.hasErrors(field)}" th:errors="*{__${field}__}"></span>
+    <span class="field__hint" th:if="${hint != null and !#fields.hasErrors(field)}" th:text="${hint}"></span>
+</div>
+
+</body>
+</html>

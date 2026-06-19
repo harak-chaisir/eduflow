@@ -3,6 +3,7 @@ package com.eduflow.student;
 import com.eduflow.audit.AuditAction;
 import com.eduflow.audit.AuditService;
 import com.eduflow.security.EduFlowUserDetails;
+import com.eduflow.student.event.StudentEvents;
 import com.eduflow.student.dto.CounselorOption;
 import com.eduflow.student.dto.RegisterStudentRequest;
 import com.eduflow.student.dto.StudentResponse;
@@ -16,6 +17,7 @@ import com.eduflow.user.User;
 import com.eduflow.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -65,6 +67,7 @@ public class StudentService {
     private final UserRepository    userRepository;
     private final AuditService      auditService;
     private final TenantLimitService tenantLimitService;
+    private final ApplicationEventPublisher events;
 
     // ── Create ───────────────────────────────────────────────────────────────
 
@@ -119,6 +122,9 @@ public class StudentService {
 
         auditService.publish(tenantId, resolvedUserId(),
                 AuditAction.STUDENT_CREATED, "STUDENT", saved.getId());
+
+        // Decoupled hook: workflow module auto-assigns the tenant's default workflow.
+        events.publishEvent(new StudentEvents.StudentCreated(tenantId, resolvedUserId(), saved.getId()));
 
         return StudentResponse.from(saved);
     }

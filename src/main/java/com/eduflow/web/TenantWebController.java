@@ -7,6 +7,7 @@ import com.eduflow.tenant.TenantPlan;
 import com.eduflow.tenant.TenantStatus;
 import com.eduflow.tenant.TenantService;
 import com.eduflow.tenant.dto.*;
+import com.eduflow.user.UserAdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +44,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TenantWebController {
 
+    /** Minimum password length, kept in sync with the public set-password flow. */
+    private static final int MIN_PASSWORD_LENGTH = 8;
+
     private final TenantService tenantService;
+    private final UserAdminService userAdminService;
 
     // ── Super-admin: list ────────────────────────────────────────────────────────
 
@@ -184,6 +189,33 @@ public class TenantWebController {
         return "redirect:/tenants/" + id;
     }
 
+    @PostMapping("/tenants/{id}/reset-password")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public String resetAdminPassword(@PathVariable UUID id,
+                                     @RequestParam UUID userId,
+                                     @RequestParam String password,
+                                     @RequestParam String confirmPassword,
+                                     @RequestHeader(value = "HX-Request", required = false) String htmxRequest,
+                                     Model model,
+                                     RedirectAttributes redirectAttributes) {
+        String message = null, error = validatePassword(password, confirmPassword);
+        if (error == null) {
+            try {
+                userAdminService.setPassword(id, userId, password);
+                message = "Password updated.";
+            } catch (RuntimeException ex) {
+                error = ex.getMessage();
+            }
+        }
+        if (htmxRequest != null) {
+            populateDetailModel(model, id, message, error);
+            return "tenant/detail :: tenantPanels";
+        }
+        redirectAttributes.addFlashAttribute(message != null ? "successMessage" : "errorMessage",
+                message != null ? message : error);
+        return "redirect:/tenants/" + id;
+    }
+
     // ── Tenant-admin: own workspace ──────────────────────────────────────────────
 
     @GetMapping("/workspace")
@@ -299,8 +331,20 @@ public class TenantWebController {
         model.addAttribute("settings", tenantService.getSettings(id));
         model.addAttribute("statuses", TenantStatus.values());
         model.addAttribute("plans", TenantPlan.values());
+        model.addAttribute("tenantAdmins", userAdminService.listTenantAdmins(id));
         if (successMessage != null) model.addAttribute("successMessage", successMessage);
         if (errorMessage != null) model.addAttribute("errorMessage", errorMessage);
+    }
+
+    /** Mirrors the public set-password rules: min length and matching confirmation. */
+    private String validatePassword(String password, String confirmPassword) {
+        if (password == null || password.length() < MIN_PASSWORD_LENGTH) {
+            return "Password must be at least " + MIN_PASSWORD_LENGTH + " characters.";
+        }
+        if (!password.equals(confirmPassword)) {
+            return "Passwords do not match.";
+        }
+        return null;
     }
 
     /** Populates the workspace model (profile + settings cards) shared by view & inline saves. */

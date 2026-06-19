@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<!--
+    Workflow builder — stages + transitions configuration (PRD §7, §9).
+    Active nav: 'workflows'
+-->
+<html th:replace="~{fragments/layout :: layout('Workflow builder', ${workflow.name}, 'workflows', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack">
+
+        <th:block th:replace="~{fragments/components :: backLink('/workflows', 'Back to workflows')}"></th:block>
+        <th:block th:replace="~{fragments/components :: toastMarkers(${successMessage}, ${errorMessage})}"></th:block>
+
+        <!-- ── Header + lifecycle actions ──────────────────────────────────── -->
+        <div class="page-head">
+            <div>
+                <h1 class="page-head__title" th:text="${workflow.name}">Workflow</h1>
+                <p class="page-head__sub">
+                    v<span th:text="${workflow.version}">1</span>
+                    · <span th:text="${workflow.country != null ? workflow.country : 'No country'}">Country</span>
+                    <span th:if="${workflow.defaultTemplate}" class="stamp stamp--approved" style="margin-left:.5rem;">Default</span>
+                    <span th:if="${workflow.archived}" class="stamp stamp--rejected" style="margin-left:.5rem;">Archived</span>
+                </p>
+            </div>
+            <div class="page-head__actions">
+                <a class="btn btn--ghost" th:href="@{/workflows/{id}/edit(id=${workflow.id})}">
+                    <i data-lucide="pencil"></i><span>Edit properties</span>
+                </a>
+                <form th:action="@{/workflows/{id}/validate(id=${workflow.id})}" method="post">
+                    <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                    <button class="btn btn--ghost" type="submit"><i data-lucide="check-check"></i><span>Validate</span></button>
+                </form>
+                <form th:action="@{/workflows/{id}/clone(id=${workflow.id})}" method="post">
+                    <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                    <button class="btn btn--ghost" type="submit"><i data-lucide="copy"></i><span>Clone</span></button>
+                </form>
+                <form th:unless="${workflow.defaultTemplate or workflow.archived}"
+                      th:action="@{/workflows/{id}/default(id=${workflow.id})}" method="post">
+                    <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                    <button class="btn btn--primary" type="submit"><i data-lucide="star"></i><span>Set default</span></button>
+                </form>
+                <form th:unless="${workflow.archived}"
+                      th:action="@{/workflows/{id}/archive(id=${workflow.id})}" method="post"
+                      onsubmit="return confirm('Archive this workflow? New students cannot be assigned to it.');">
+                    <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                    <button class="btn btn--danger" type="submit"><i data-lucide="archive"></i><span>Archive</span></button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ── Stages ──────────────────────────────────────────────────────── -->
+        <div class="card">
+            <div class="card__header">
+                <h3 class="card__title">Stages</h3>
+            </div>
+            <div class="card__body">
+                <div th:if="${workflow.stages.isEmpty()}" class="empty">
+                    <p class="empty__title">No stages yet</p>
+                    <p>Add the first stage below. The lowest-ordered stage is the entry point.</p>
+                </div>
+                <div class="table-wrap" th:unless="${workflow.stages.isEmpty()}">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Stage</th>
+                                <th>Type</th>
+                                <th>SLA</th>
+                                <th>Owner role</th>
+                                <th>Required docs</th>
+                                <th class="cell-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="stage : ${workflow.stages}">
+                                <td><span class="is-mono table__mono" th:text="${stage.displayOrder}">0</span></td>
+                                <td>
+                                    <div class="table__primary">
+                                        <span class="stage-dot" th:if="${stage.color != null}"
+                                              th:style="'background:' + ${stage.color}"></span>
+                                        <div>
+                                            <span class="table__name" th:text="${stage.name}">Stage</span>
+                                            <div class="table__sub is-mono" th:text="${stage.code}">CODE</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="table__sub" th:text="${stage.stageType}">NORMAL</span></td>
+                                <td><span class="table__sub" th:text="${stage.slaDays != null ? stage.slaDays + 'd' : '—'}">—</span></td>
+                                <td><span class="table__sub" th:text="${stage.ownerRole != null ? stage.ownerRole : '—'}">—</span></td>
+                                <td>
+                                    <span class="table__sub"
+                                          th:text="${stage.requiredDocuments.isEmpty() ? '—' : #strings.listJoin(stage.requiredDocuments, ', ')}">—</span>
+                                </td>
+                                <td>
+                                    <div class="table__actions">
+                                        <a class="icon-btn" th:href="@{/workflows/{id}/stages/{sid}/edit(id=${workflow.id},sid=${stage.id})}"
+                                           title="Edit stage" aria-label="Edit stage"><i data-lucide="pencil"></i></a>
+                                        <form th:action="@{/workflows/{id}/stages/{sid}/delete(id=${workflow.id},sid=${stage.id})}"
+                                              method="post" onsubmit="return confirm('Delete this stage and its transitions?');">
+                                            <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                                            <button class="icon-btn icon-btn--danger" type="submit"
+                                                    title="Delete" aria-label="Delete"><i data-lucide="trash-2"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Add stage -->
+                <form th:unless="${workflow.archived}" th:action="@{/workflows/{id}/stages(id=${workflow.id})}"
+                      method="post" th:object="${newStage}" class="form-grid form-grid--inline">
+                    <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                    <div class="field">
+                        <label class="label" for="stageName">Stage name</label>
+                        <input class="input" type="text" id="stageName" th:field="*{name}" placeholder="Document Collection" required />
+                    </div>
+                    <div class="field">
+                        <label class="label" for="stageCode">Code</label>
+                        <input class="input" type="text" id="stageCode" th:field="*{code}" placeholder="DOC_COLLECTION" required />
+                    </div>
+                    <div class="field toolbar__field--sm">
+                        <label class="label" for="stageType">Type</label>
+                        <select class="select" id="stageType" th:field="*{stageType}">
+                            <option th:each="t : ${stageTypes}" th:value="${t}" th:text="${t}"></option>
+                        </select>
+                    </div>
+                    <div class="field toolbar__field--sm">
+                        <label class="label" for="slaDays">SLA days</label>
+                        <input class="input" type="number" min="1" id="slaDays" th:field="*{slaDays}" placeholder="7" />
+                    </div>
+                    <div class="field toolbar__field--sm">
+                        <label class="label" for="ownerRole">Owner role</label>
+                        <select class="select" id="ownerRole" th:field="*{ownerRole}">
+                            <option value="">— none —</option>
+                            <option th:each="r : ${assignableRoles}" th:value="${r}" th:text="${r}"></option>
+                        </select>
+                    </div>
+                    <div class="field toolbar__field--sm">
+                        <label class="label" for="color">Color</label>
+                        <input class="input" type="text" id="color" th:field="*{color}" placeholder="#2563eb" />
+                    </div>
+                    <div class="field field--full">
+                        <label class="label" for="requiredDocuments">Required documents</label>
+                        <select class="select" id="requiredDocuments" th:field="*{requiredDocuments}" multiple size="4">
+                            <option th:each="d : ${documentTypes}" th:value="${d}" th:text="${d.label()}"></option>
+                        </select>
+                    </div>
+                    <div class="form-actions field--full">
+                        <button class="btn btn--primary" type="submit"><i data-lucide="plus"></i><span>Add stage</span></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ── Transitions ─────────────────────────────────────────────────── -->
+        <div class="card">
+            <div class="card__header">
+                <h3 class="card__title">Transitions</h3>
+            </div>
+            <div class="card__body">
+                <div th:if="${workflow.transitions.isEmpty()}" class="empty">
+                    <p class="empty__title">No transitions yet</p>
+                    <p>Connect your stages so students can move forward through the workflow.</p>
+                </div>
+                <div class="table-wrap" th:unless="${workflow.transitions.isEmpty()}">
+                    <table class="table">
+                        <thead>
+                            <tr><th>From</th><th></th><th>To</th><th>Type</th><th>Approval</th><th class="cell-right">Actions</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="tr : ${workflow.transitions}">
+                                <td><span class="table__name" th:text="${tr.fromStageName}">From</span></td>
+                                <td><i data-lucide="arrow-right" class="icon-sm icon-muted"></i></td>
+                                <td><span class="table__name" th:text="${tr.toStageName}">To</span></td>
+                                <td><span class="table__sub" th:text="${tr.transitionType}">FORWARD</span></td>
+                                <td><span class="table__sub" th:text="${tr.requiresApproval} ? 'Required' : '—'">—</span></td>
+                                <td>
+                                    <div class="table__actions">
+                                        <form th:action="@{/workflows/{id}/transitions/{tid}/delete(id=${workflow.id},tid=${tr.id})}"
+                                              method="post" onsubmit="return confirm('Delete this transition?');">
+                                            <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                                            <button class="icon-btn icon-btn--danger" type="submit"
+                                                    title="Delete" aria-label="Delete"><i data-lucide="trash-2"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Add transition -->
+                <form th:unless="${workflow.archived or workflow.stages.size() < 2}"
+                      th:action="@{/workflows/{id}/transitions(id=${workflow.id})}" method="post"
+                      class="form-grid form-grid--inline">
+                    <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                    <div class="field">
+                        <label class="label" for="fromStageId">From stage</label>
+                        <select class="select" id="fromStageId" name="fromStageId" required>
+                            <option value="">— select —</option>
+                            <option th:each="s : ${workflow.stages}" th:value="${s.id}" th:text="${s.name}"></option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="toStageId">To stage</label>
+                        <select class="select" id="toStageId" name="toStageId" required>
+                            <option value="">— select —</option>
+                            <option th:each="s : ${workflow.stages}" th:value="${s.id}" th:text="${s.name}"></option>
+                        </select>
+                    </div>
+                    <div class="field toolbar__field--sm">
+                        <label class="label" for="transitionType">Type</label>
+                        <select class="select" id="transitionType" name="transitionType">
+                            <option th:each="t : ${transitionTypes}" th:value="${t}" th:text="${t}"></option>
+                        </select>
+                    </div>
+                    <div class="field toolbar__field--sm">
+                        <label class="label checkbox">
+                            <input type="checkbox" name="requiresApproval" value="true" />
+                            <span>Requires approval</span>
+                        </label>
+                    </div>
+                    <div class="form-actions field--full">
+                        <button class="btn btn--primary" type="submit"><i data-lucide="plus"></i><span>Add transition</span></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</th:block>
+</body>
+</html>

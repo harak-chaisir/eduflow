@@ -24,16 +24,16 @@
             </div>
         </div>
 
-        <h2 style="font-family: var(--font-display); font-size:1.1rem; margin-bottom: var(--space-5);">
+        <h2 class="auth__heading">
             Sign in to your account
         </h2>
 
         <!-- Logout / error messages -->
-        <div th:if="${logoutMessage}" class="flash flash--success" style="margin-bottom: var(--space-4);">
+        <div th:if="${logoutMessage}" class="flash flash--success flash--spaced">
             <i data-lucide="check-circle-2"></i>
             <span th:text="${logoutMessage}">Signed out.</span>
         </div>
-        <div th:if="${errorMessage}" class="flash flash--error" style="margin-bottom: var(--space-4);">
+        <div th:if="${errorMessage}" class="flash flash--error flash--spaced">
             <i data-lucide="alert-circle"></i>
             <span th:text="${errorMessage}">Error.</span>
         </div>
@@ -53,9 +53,9 @@
                        autocomplete="current-password" required placeholder="••••••••" />
             </div>
 
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
 
-            <button class="btn btn--primary" type="submit" style="width:100%; margin-top: var(--space-2);">
+            <button class="btn btn--primary auth__submit" type="submit">
                 <i data-lucide="log-in"></i><span>Sign in</span>
             </button>
         </form>
