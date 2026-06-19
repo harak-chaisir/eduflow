@@ -35,6 +35,8 @@
         </div>
 
         <nav class="sidebar__nav" aria-label="Primary">
+            <div class="sidebar__section-label">Core</div>
+
             <a class="nav-link" th:classappend="${activeNav == 'dashboard'} ? 'is-active'" th:href="@{/}">
                 <i data-lucide="layout-dashboard"></i>
                 <span>Dashboard</span>
@@ -44,6 +46,8 @@
                 <i data-lucide="users"></i>
                 <span>Students</span>
             </a>
+
+            <div class="sidebar__section-label">Operations</div>
 
             <a class="nav-link" th:classappend="${activeNav == 'applications'} ? 'is-active'" href="#">
                 <i data-lucide="file-text"></i>

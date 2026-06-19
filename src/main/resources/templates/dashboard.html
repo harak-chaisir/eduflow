@@ -38,22 +38,34 @@
         <!-- ===================== KPI stat cards ===================== -->
         <section class="stat-grid" aria-label="Key metrics">
             <div class="stat-card">
-                <div class="stat-card__label">Total students</div>
+                <div class="stat-card__top">
+                    <div class="stat-card__label">Total students</div>
+                    <span class="stat-card__icon"><i data-lucide="users"></i></span>
+                </div>
                 <div class="stat-card__value" th:text="${totalStudents}">0</div>
                 <div class="stat-card__hint">Across all stages</div>
             </div>
             <div class="stat-card">
-                <div class="stat-card__label">Leads</div>
+                <div class="stat-card__top">
+                    <div class="stat-card__label">Leads</div>
+                    <span class="stat-card__icon"><i data-lucide="sparkles"></i></span>
+                </div>
                 <div class="stat-card__value" th:text="${statusCounts.get(S.LEAD)}">0</div>
                 <div class="stat-card__hint">Awaiting qualification</div>
             </div>
             <div class="stat-card">
-                <div class="stat-card__label">Active</div>
+                <div class="stat-card__top">
+                    <div class="stat-card__label">Active</div>
+                    <span class="stat-card__icon"><i data-lucide="activity"></i></span>
+                </div>
                 <div class="stat-card__value" th:text="${statusCounts.get(S.ACTIVE)}">0</div>
                 <div class="stat-card__hint">In progress</div>
             </div>
             <div class="stat-card stat-card--accent">
-                <div class="stat-card__label">Enrolled</div>
+                <div class="stat-card__top">
+                    <div class="stat-card__label">Enrolled</div>
+                    <span class="stat-card__icon"><i data-lucide="graduation-cap"></i></span>
+                </div>
                 <div class="stat-card__value" th:text="${statusCounts.get(S.ENROLLED)}">0</div>
                 <div class="stat-card__hint">Completed the journey</div>
             </div>
@@ -115,26 +127,35 @@
 
             <section class="card">
                 <div class="card__header">
-                    <div class="card__title">Your account</div>
+                    <div class="card__title">Today's work</div>
                 </div>
                 <div class="card__body">
-                    <dl class="meta-list">
-                        <div class="meta-list__row">
-                            <dt>Name</dt>
-                            <dd th:text="${fullName != null and !fullName.isEmpty()} ? ${fullName} : '—'">—</dd>
-                        </div>
-                        <div class="meta-list__row">
-                            <dt>Email</dt>
-                            <dd class="is-mono" th:text="${email}">user@example.com</dd>
-                        </div>
-                        <div class="meta-list__row">
-                            <dt>Roles</dt>
-                            <dd class="meta-list__roles">
-                                <span class="stamp stamp--approved" th:each="role : ${roles}"
-                                      th:text="${#strings.replace(role, 'ROLE_', '')}">ROLE</span>
-                            </dd>
-                        </div>
-                    </dl>
+                    <div class="work-list">
+                        <a class="work-item" th:href="@{/students(status='LEAD')}">
+                            <span class="work-item__icon"><i data-lucide="user-round-plus"></i></span>
+                            <span class="work-item__body">
+                                <strong>Qualify new leads</strong>
+                                <span><span th:text="${statusCounts.get(S.LEAD)}">0</span> waiting in the pipeline</span>
+                            </span>
+                            <i data-lucide="chevron-right" class="icon-sm"></i>
+                        </a>
+                        <a class="work-item" th:href="@{/students(status='ACTIVE')}">
+                            <span class="work-item__icon"><i data-lucide="clipboard-check"></i></span>
+                            <span class="work-item__body">
+                                <strong>Move active files forward</strong>
+                                <span><span th:text="${statusCounts.get(S.ACTIVE)}">0</span> student records in progress</span>
+                            </span>
+                            <i data-lucide="chevron-right" class="icon-sm"></i>
+                        </a>
+                        <a class="work-item" th:href="@{/students}">
+                            <span class="work-item__icon"><i data-lucide="list-filter"></i></span>
+                            <span class="work-item__body">
+                                <strong>Review the roster</strong>
+                                <span>Search, filter, and update student details</span>
+                            </span>
+                            <i data-lucide="chevron-right" class="icon-sm"></i>
+                        </a>
+                    </div>
                 </div>
             </section>
         </div>
