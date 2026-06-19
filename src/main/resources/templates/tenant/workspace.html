@@ -77,13 +77,13 @@
                             <label class="field__label" for="brandColor">Brand colour</label>
                             <div style="display:flex; align-items:center; gap:10px;">
                                 <input type="color" data-color-picker aria-label="Pick brand colour"
-                                       th:value="${settings.brandColor != null ? settings.brandColor : '#4f46e5'}"
+                                       th:value="${settings.brandColor != null ? settings.brandColor : '#0f766e'}"
                                        style="width:44px; height:40px; padding:2px; cursor:pointer;
                                               border:1px solid var(--line); border-radius:var(--radius-md);
                                               background:var(--surface);" />
                                 <input class="input" id="brandColor" type="text" name="brandColor"
                                        data-color-hex th:value="${settings.brandColor}"
-                                       placeholder="#4f46e5" pattern="#?[0-9a-fA-F]{6}"
+                                       placeholder="#0f766e" pattern="#?[0-9a-fA-F]{6}"
                                        style="flex:1;" />
                             </div>
                         </div>

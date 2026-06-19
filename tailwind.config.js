@@ -7,29 +7,29 @@ module.exports = {
     extend: {
       colors: {
         /**
-         * Brand palette — maps 1-to-1 with EduFlow CSS design tokens in eduflow.css.
-         *   brand-600 → --brand:        #4f46e5  (primary indigo)
-         *   brand-700 → --brand-strong: #4338ca
-         *   brand-50  → --brand-soft:   #eef2ff
+         * Brand palette - maps 1-to-1 with EduFlow CSS design tokens in eduflow.css.
+         *   brand-600 -> --brand:        #0f766e  (academic teal)
+         *   brand-700 -> --brand-strong: #115e59
+         *   brand-50  -> --brand-soft:   #ccfbf1
          */
         brand: {
-          50:  '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
+          50:  '#ccfbf1',
+          100: '#99f6e4',
+          200: '#5eead4',
+          300: '#2dd4bf',
+          400: '#14b8a6',
+          500: '#0d9488',
+          600: '#0f766e',
+          700: '#115e59',
+          800: '#134e4a',
+          900: '#042f2e',
         },
         accent: {
-          50:  '#f3e8ff',
-          100: '#ede9fe',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
+          50:  '#dbeafe',
+          100: '#bfdbfe',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
         },
       },
       fontFamily: {
@@ -43,4 +43,3 @@ module.exports = {
     require('@tailwindcss/forms'),
   ],
 };
-

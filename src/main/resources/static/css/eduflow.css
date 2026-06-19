@@ -4,34 +4,34 @@
    One stylesheet, applied app-wide via the shared layout fragment.
 
    Identity:
-     • indigo as the structural brand colour on a cool slate neutral base
-     • violet accent for dossier readiness and the "approved" verification seal
+     • academic teal as the structural brand colour on a clean gray neutral base
+     • focused blue accent for dossier readiness and progress highlights
      • emerald / amber / rose status palette
      • Plus Jakarta Sans (display) · Inter (UI) · IBM Plex Mono (records/IDs)
    ========================================================================== */
 
 /* ----- Design tokens ----------------------------------------------------- */
 :root {
-    /* Brand + structure — indigo */
-    --brand: #4f46e5;
-    --brand-strong: #4338ca;
-    --brand-soft: #eef2ff;
+    /* Brand + structure - academic teal */
+    --brand: #0f766e;
+    --brand-strong: #115e59;
+    --brand-soft: #ccfbf1;
     --brand-contrast: #ffffff;
 
-    /* Accent — readiness ring + approved seal (violet, complements indigo) */
-    --accent: #7c3aed;
-    --accent-strong: #6d28d9;
-    --accent-soft: #f3e8ff;
+    /* Accent - focused blue for readiness and progress highlights */
+    --accent: #2563eb;
+    --accent-strong: #1d4ed8;
+    --accent-soft: #dbeafe;
 
-    /* Neutrals — slate */
-    --ink: #0f172a;
-    --ink-soft: #334155;
-    --muted: #64748b;
-    --line: #e2e8f0;
-    --line-strong: #cbd5e1;
+    /* Neutrals - crisp gray */
+    --ink: #111827;
+    --ink-soft: #374151;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --line-strong: #d1d5db;
     --surface: #ffffff;
     --surface-raised: #ffffff;
-    --canvas: #f8fafc;
+    --canvas: #f9fafb;
 
     /* Status palette (verification states) */
     --status-pending-fg: #b45309;
@@ -40,10 +40,10 @@
     --status-approved-bg: #d1fae5;
     --status-rejected-fg: #be123c;
     --status-rejected-bg: #ffe4e6;
-    --status-revision-fg: #6d28d9;
-    --status-revision-bg: #ede9fe;
-    --status-empty-fg: #64748b;
-    --status-empty-bg: #f1f5f9;
+    --status-revision-fg: #1d4ed8;
+    --status-revision-bg: #dbeafe;
+    --status-empty-fg: #6b7280;
+    --status-empty-bg: #f3f4f6;
 
     /* Typography */
     --font-display: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
@@ -1550,9 +1550,9 @@ h1, h2, h3, h4 {
     place-items: center;
     padding: var(--space-5);
     background:
-        radial-gradient(900px circle at 0% 0%, rgba(124, 58, 237, 0.28), transparent 45%),
-        radial-gradient(900px circle at 100% 100%, rgba(79, 70, 229, 0.32), transparent 45%),
-        linear-gradient(135deg, #312e81 0%, #4338ca 55%, #6d28d9 100%);
+        radial-gradient(900px circle at 0% 0%, rgba(37, 99, 235, 0.24), transparent 45%),
+        radial-gradient(900px circle at 100% 100%, rgba(15, 118, 110, 0.32), transparent 45%),
+        linear-gradient(135deg, #134e4a 0%, #115e59 55%, #1d4ed8 100%);
 }
 
 .auth__card {
