@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<!--
+    Staff roster page.
+    Plugs into the shared sidebar shell via fragments/layout.
+    Active nav: 'staff'
+-->
+<html th:replace="~{fragments/layout :: layout('Staff', 'All staff', 'staff', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack">
+
+        <!-- page head -->
+        <div class="page-head">
+            <div>
+                <div class="eyebrow">Administration</div>
+                <h1 class="page-head__title">Your team</h1>
+                <p class="page-head__sub">Manage staff accounts, roles, and the student caseloads they own.</p>
+            </div>
+            <div class="page-head__actions">
+                <a class="btn btn--primary" href="/staff/new">
+                    <i data-lucide="user-plus"></i>
+                    <span>Invite staff</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- ── Stat strip ──────────────────────────────────────────────────── -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-card__top">
+                    <span class="stat-card__label">Total staff</span>
+                    <span class="stat-card__icon"><i data-lucide="users-round"></i></span>
+                </div>
+                <div class="stat-card__value" th:text="${stats.total()}">0</div>
+                <div class="stat-card__hint">Across all roles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card__top">
+                    <span class="stat-card__label">Active counselors</span>
+                    <span class="stat-card__icon"><i data-lucide="user-round"></i></span>
+                </div>
+                <div class="stat-card__value" th:text="${stats.activeCounselors()}">0</div>
+                <div class="stat-card__sub">Carrying student caseloads</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card__top">
+                    <span class="stat-card__label">Avg. caseload</span>
+                    <span class="stat-card__icon"><i data-lucide="briefcase"></i></span>
+                </div>
+                <div class="stat-card__value" th:text="${stats.avgCaseload()}">0</div>
+                <div class="stat-card__hint">Students per active counselor</div>
+            </div>
+            <!-- seat usage -->
+            <div class="stat-card stat-card--seats">
+                <div class="stat-card__top">
+                    <span class="stat-card__label" th:text="'Staff seats · ' + ${stats.planLabel()}">Staff seats</span>
+                    <span class="stat-card__icon"><i data-lucide="shield-check"></i></span>
+                </div>
+                <div class="stat-card__value">
+                    <span th:text="${stats.seatsUsed()}">0</span>
+                    <span class="stat-card__value-max"
+                          th:text="${stats.seatsMax() != null ? '/ ' + stats.seatsMax() : '/ ∞'}">/ 25</span>
+                </div>
+                <div class="seat-bar" th:if="${stats.seatsMax() != null}">
+                    <div class="seat-bar__fill" th:style="'width:' + ${stats.seatPct()} + '%'"></div>
+                </div>
+                <div class="stat-card__hint"
+                     th:text="${stats.seatsAvailable() != null ? stats.seatsAvailable() + ' seats available' : 'Unlimited seats'}">
+                    seats available</div>
+            </div>
+        </div>
+
+        <!-- ── Toolbar ─────────────────────────────────────────────────────── -->
+        <div class="card">
+            <div class="card__body">
+                <form id="staffSearchForm"
+                      method="get" th:action="@{/staff}"
+                      class="toolbar"
+                      hx-get="/staff/search"
+                      hx-trigger="input changed delay:350ms from:#searchName,
+                                  input changed delay:350ms from:#searchEmail,
+                                  change from:#searchRole,
+                                  change from:#searchStatus,
+                                  submit"
+                      hx-target="#staff-results"
+                      hx-push-url="/staff">
+                    <div class="toolbar__search">
+                        <i data-lucide="search"></i>
+                        <input class="input" type="text" id="searchName" name="name"
+                               th:value="${searchName}"
+                               placeholder="Search by name…" />
+                    </div>
+                    <div class="field toolbar__field">
+                        <input class="input" type="text" id="searchEmail" name="email"
+                               th:value="${searchEmail}"
+                               placeholder="Search by email…" />
+                    </div>
+                    <div class="field toolbar__field--sm">
+                        <select class="select" id="searchRole" name="role">
+                            <option value="">All roles</option>
+                            <option th:each="r : ${roleOptions}" th:value="${r.name()}"
+                                    th:text="${r.label()}" th:selected="${r.name() == searchRole}"></option>
+                        </select>
+                    </div>
+                    <div class="field toolbar__field--sm">
+                        <select class="select" id="searchStatus" name="status">
+                            <option value="">All statuses</option>
+                            <option th:each="s : ${statuses}" th:value="${s.name()}"
+                                    th:text="${s}" th:selected="${s == searchStatus}"></option>
+                        </select>
+                    </div>
+                    <button class="btn btn--primary" type="submit">
+                        <i data-lucide="search"></i><span>Search</span>
+                    </button>
+                    <a class="btn btn--ghost" href="/staff">Reset</a>
+                </form>
+            </div>
+        </div>
+
+        <!-- ── Results — HTMX swap target ─────────────────────────────────── -->
+        <div id="staff-results" th:fragment="staffResults"
+             th:with="filterQuery=${(searchName != null and !#strings.isEmpty(searchName) ? '&name=' + #uris.escapeQueryParam(searchName) : '')
+                                  + (searchEmail != null and !#strings.isEmpty(searchEmail) ? '&email=' + #uris.escapeQueryParam(searchEmail) : '')
+                                  + (searchRole != null and !#strings.isEmpty(searchRole) ? '&role=' + searchRole : '')
+                                  + (searchStatus != null ? '&status=' + searchStatus : '')}">
+
+            <th:block th:replace="~{fragments/components :: toastMarkers(${successMessage}, ${errorMessage})}"></th:block>
+
+            <p class="page-head__sub result-count">
+                <span th:text="${staffPage.totalElements}">0</span> staff member(s) found
+            </p>
+
+            <!-- Empty state -->
+            <div th:if="${staffPage.totalElements == 0}" class="empty card">
+                <i data-lucide="users-round" class="icon-muted-lg"></i>
+                <p class="empty__title">No staff match these filters</p>
+                <p th:if="${searchName != null or searchEmail != null or searchStatus != null or searchRole != null}">
+                    Try clearing the search or role/status filters, or <a href="/staff">reset</a>.
+                </p>
+                <p th:unless="${searchName != null or searchEmail != null or searchStatus != null or searchRole != null}">
+                    Get started by <a href="/staff/new">inviting your first staff member</a>.
+                </p>
+            </div>
+
+            <!-- Table -->
+            <div class="card" th:unless="${staffPage.totalElements == 0}">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Staff member</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Student caseload</th>
+                                <th class="cell-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="member : ${staffPage.content}">
+                                <td>
+                                    <div class="table__primary">
+                                        <th:block th:replace="~{fragments/components :: avatar(${member.firstName() != null and !#strings.isEmpty(member.firstName()) ? member.firstName() : member.email()}, 'avatar--sm')}"></th:block>
+                                        <div>
+                                            <a class="table__name" th:href="@{/staff/{id}(id=${member.id()})}"
+                                               th:text="${member.fullName()}">Staff Name</a>
+                                            <div class="table__sub" th:text="${member.email()}">email</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="tag-row">
+                                        <span class="tag" th:each="role : ${member.roleNames()}"
+                                              th:text="${#strings.replace(#strings.replace(role, 'ROLE_', ''), '_', ' ')}">Role</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <th:block th:replace="~{fragments/components :: statusStamp(${member.status()}, ${member.status()})}"></th:block>
+                                </td>
+                                <td>
+                                    <span th:if="${member.counselor()}" class="caseload-cell">
+                                        <i data-lucide="briefcase" class="icon-sm"></i>
+                                        <span th:text="${member.caseload()} + ' student' + (${member.caseload()} == 1 ? '' : 's')">0 students</span>
+                                    </span>
+                                    <span th:unless="${member.counselor()}" class="table__sub"
+                                          th:text="${member.roleNote()}">—</span>
+                                </td>
+                                <td>
+                                    <div class="table__actions">
+                                        <a class="icon-btn" th:href="@{/staff/{id}(id=${member.id()})}"
+                                           title="View" aria-label="View">
+                                            <i data-lucide="eye"></i>
+                                        </a>
+                                        <a class="icon-btn" th:href="@{/staff/{id}/edit(id=${member.id()})}"
+                                           title="Edit" aria-label="Edit">
+                                            <i data-lucide="pencil"></i>
+                                        </a>
+                                        <form th:action="@{/staff/{id}/status(id=${member.id()})}"
+                                              method="post"
+                                              th:if="${member.status().name() != 'INACTIVE'}"
+                                              hx-post th:hx-post="@{/staff/{id}/status(id=${member.id()})}"
+                                              hx-confirm="Deactivate this staff member?"
+                                              hx-target="#staff-results"
+                                              hx-push-url="false">
+                                            <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                                            <input type="hidden" name="newStatus" value="INACTIVE" />
+                                            <button class="icon-btn icon-btn--danger" type="submit"
+                                                    title="Deactivate" aria-label="Deactivate">
+                                                <i data-lucide="user-x"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <th:block th:replace="~{fragments/pagination :: pagination(${staffPage}, '/staff', '/staff/search', '#staff-results', ${filterQuery})}"></th:block>
+            </div>
+
+        </div><!-- /#staff-results -->
+    </div>
+
+</th:block>
+</body>
+</html>
