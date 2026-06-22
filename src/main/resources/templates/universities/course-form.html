@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<!--
+    Course edit form.
+    Active nav: 'universities'
+-->
+<html th:replace="~{fragments/layout :: layout('Edit course', 'Universities / ' + ${university.name} + ' / Edit course', 'universities', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack form-shell">
+
+        <a th:href="@{/universities/{id}(id=${universityId})}" class="eyebrow inline-link">
+            <i data-lucide="arrow-left" class="icon-sm"></i>
+            <span>Back to university</span>
+        </a>
+
+        <div class="page-head">
+            <div>
+                <h1 class="page-head__title">Edit course</h1>
+                <p class="page-head__sub" th:text="${university.name}">University</p>
+            </div>
+        </div>
+
+        <form th:action="@{/universities/{id}/courses/{cid}/edit(id=${universityId},cid=${courseId})}"
+              th:object="${courseForm}" method="post" novalidate>
+            <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+
+            <div th:if="${#fields.hasErrors('*')}" class="flash flash--error validation-summary">
+                <i data-lucide="alert-triangle"></i>
+                <span>Please correct the highlighted fields and try again.</span>
+            </div>
+
+            <div class="card">
+                <div class="form-section">
+                    <div class="form-section__title">Course details</div>
+
+                    <div class="form-grid">
+                        <th:block th:replace="~{fragments/forms :: field(field='name', label='Course name', required=true, maxlength=255, span=true)}"></th:block>
+
+                        <div class="field">
+                            <label class="field__label" for="level">Level <span class="required-mark">*</span></label>
+                            <select class="select" id="level" th:field="*{level}"
+                                    th:classappend="${#fields.hasErrors('level')} ? 'is-invalid'">
+                                <option value="">Select level…</option>
+                                <option th:each="l : ${levels}" th:value="${l.name()}" th:text="${l}">MASTER</option>
+                            </select>
+                            <span class="field__error" th:if="${#fields.hasErrors('level')}" th:errors="*{level}"></span>
+                        </div>
+
+                        <th:block th:replace="~{fragments/forms :: field(field='intakeMonth', label='Intake month (1–12)', type='number')}"></th:block>
+                        <th:block th:replace="~{fragments/forms :: field(field='intakeYear', label='Intake year', type='number')}"></th:block>
+                        <th:block th:replace="~{fragments/forms :: field(field='tuitionFee', label='Tuition fee', type='number')}"></th:block>
+                        <th:block th:replace="~{fragments/forms :: field(field='entryRequirements', label='Entry requirements', maxlength=1000, span=true)}"></th:block>
+                    </div>
+
+                    <div class="field field--span2">
+                        <label class="check">
+                            <input type="checkbox" th:field="*{active}" />
+                            <span>Active — available for new applications</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a class="btn btn--ghost" th:href="@{/universities/{id}(id=${universityId})}">Cancel</a>
+                    <button class="btn btn--primary" type="submit">
+                        <i data-lucide="check"></i><span>Save changes</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+</th:block>
+</body>
+</html>

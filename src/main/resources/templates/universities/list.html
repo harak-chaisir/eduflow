@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<!--
+    University catalog list page.
+    Plugs into the shared sidebar shell via fragments/layout.
+    Active nav: 'universities'
+-->
+<html th:replace="~{fragments/layout :: layout('Universities', 'University catalog', 'universities', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack">
+
+        <div class="page-head">
+            <div>
+                <h1 class="page-head__title">Universities</h1>
+            </div>
+            <div class="page-head__actions">
+                <a sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')"
+                   class="btn btn--primary" href="/universities/new">
+                    <i data-lucide="plus"></i>
+                    <span>Add university</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- ── Search / filter bar ─────────────────────────────────────────── -->
+        <div class="card">
+            <div class="card__body">
+                <form id="universitySearchForm"
+                      method="get" th:action="@{/universities}"
+                      class="toolbar"
+                      hx-get="/universities/search"
+                      hx-trigger="input changed delay:350ms from:#searchQ,
+                                  input changed delay:350ms from:#searchCountry,
+                                  submit"
+                      hx-target="#university-results"
+                      hx-push-url="/universities">
+                    <div class="toolbar__search">
+                        <i data-lucide="search"></i>
+                        <input class="input" type="text" id="searchQ" name="q"
+                               th:value="${searchQ}"
+                               placeholder="Search by name or code…" />
+                    </div>
+                    <div class="field toolbar__field">
+                        <input class="input" type="text" id="searchCountry" name="country"
+                               th:value="${searchCountry}"
+                               placeholder="Filter by country…" />
+                    </div>
+                    <button class="btn btn--primary" type="submit">
+                        <i data-lucide="search"></i><span>Search</span>
+                    </button>
+                    <a class="btn btn--ghost" href="/universities">Reset</a>
+                </form>
+            </div>
+        </div>
+
+        <!-- ── Results — HTMX swap target ─────────────────────────────────── -->
+        <div id="university-results" th:fragment="universityResults"
+             th:with="filterQuery=${(searchQ != null and !#strings.isEmpty(searchQ) ? '&q=' + #uris.escapeQueryParam(searchQ) : '')
+                                  + (searchCountry != null and !#strings.isEmpty(searchCountry) ? '&country=' + #uris.escapeQueryParam(searchCountry) : '')}">
+
+            <th:block th:replace="~{fragments/components :: toastMarkers(${successMessage}, ${errorMessage})}"></th:block>
+
+            <p class="page-head__sub result-count">
+                <span th:text="${universitiesPage.totalElements}">0</span> universit(ies) found
+            </p>
+
+            <!-- Empty state -->
+            <div th:if="${universitiesPage.totalElements == 0}" class="empty card">
+                <i data-lucide="building" class="icon-muted-lg"></i>
+                <p class="empty__title">No universities found</p>
+                <p th:if="${searchQ != null or searchCountry != null}">
+                    Try adjusting your filters or <a href="/universities">clear the search</a>.
+                </p>
+                <p th:unless="${searchQ != null or searchCountry != null}"
+                   sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')">
+                    Get started by <a href="/universities/new">adding your first university</a>.
+                </p>
+            </div>
+
+            <!-- Table -->
+            <div class="card" th:unless="${universitiesPage.totalElements == 0}">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>University</th>
+                                <th>Country</th>
+                                <th>City</th>
+                                <th>Status</th>
+                                <th class="cell-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="u : ${universitiesPage.content}">
+                                <td>
+                                    <div class="table__primary">
+                                        <th:block th:replace="~{fragments/components :: avatar(${u.name}, 'avatar--sm')}"></th:block>
+                                        <div>
+                                            <a class="table__name" th:href="@{/universities/{id}(id=${u.id})}"
+                                               th:text="${u.name}">University</a>
+                                            <div class="table__sub" th:if="${u.code}" th:text="${u.code}">CODE</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td th:text="${u.country}">Country</td>
+                                <td>
+                                    <span class="table__sub" th:text="${u.city != null ? u.city : '—'}">—</span>
+                                </td>
+                                <td>
+                                    <span class="stamp" th:attr="data-status=${u.active ? 'ACTIVE' : 'INACTIVE'}"
+                                          th:text="${u.active ? 'Active' : 'Inactive'}">Active</span>
+                                </td>
+                                <td>
+                                    <div class="table__actions">
+                                        <a class="icon-btn" th:href="@{/universities/{id}(id=${u.id})}"
+                                           title="View" aria-label="View">
+                                            <i data-lucide="eye"></i>
+                                        </a>
+                                        <a sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')"
+                                           class="icon-btn" th:href="@{/universities/{id}/edit(id=${u.id})}"
+                                           title="Edit" aria-label="Edit">
+                                            <i data-lucide="pencil"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <th:block th:replace="~{fragments/pagination :: pagination(${universitiesPage}, '/universities', '/universities/search', '#university-results', ${filterQuery})}"></th:block>
+            </div>
+
+        </div><!-- /#university-results -->
+    </div>
+
+</th:block>
+</body>
+</html>

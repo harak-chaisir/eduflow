@@ -1,8 +1,13 @@
 package com.eduflow.exception;
 
+import com.eduflow.application.ApplicationNotFoundException;
+import com.eduflow.application.DuplicateApplicationException;
+import com.eduflow.application.InvalidApplicationStatusTransitionException;
 import com.eduflow.document.DocumentNotFoundException;
 import com.eduflow.document.InvalidDocumentStatusTransitionException;
 import com.eduflow.document.storage.DocumentStorageException;
+import com.eduflow.university.CourseNotFoundException;
+import com.eduflow.university.UniversityNotFoundException;
 import com.eduflow.student.DuplicateStudentException;
 import com.eduflow.student.InvalidStudentStatusTransitionException;
 import com.eduflow.student.StudentNotFoundException;
@@ -93,6 +98,14 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage(), request);
     }
 
+    @ExceptionHandler({UniversityNotFoundException.class, CourseNotFoundException.class,
+            ApplicationNotFoundException.class})
+    public ResponseEntity<ErrorResponse> handleCatalogNotFound(
+            RuntimeException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage(), request);
+    }
+
     // ── 409 Conflict ─────────────────────────────────────────────────────────
 
     @ExceptionHandler(DuplicateStudentException.class)
@@ -126,6 +139,20 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateWorkflowNameException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateWorkflowName(
             DuplicateWorkflowNameException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.CONFLICT, CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DuplicateApplicationException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateApplication(
+            DuplicateApplicationException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.CONFLICT, CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidApplicationStatusTransitionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidApplicationStatusTransition(
+            InvalidApplicationStatusTransitionException ex, HttpServletRequest request) {
 
         return build(HttpStatus.CONFLICT, CONFLICT, ex.getMessage(), request);
     }

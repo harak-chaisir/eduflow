@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<!--
+    Applications pipeline (tenant-wide) with status filter.
+    Active nav: 'applications'
+-->
+<html th:replace="~{fragments/layout :: layout('Applications', 'Application pipeline', 'applications', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack">
+
+        <div class="page-head">
+            <div>
+                <h1 class="page-head__title">Applications</h1>
+            </div>
+        </div>
+
+        <!-- ── Filter bar ──────────────────────────────────────────────────── -->
+        <div class="card">
+            <div class="card__body">
+                <form id="applicationFilterForm"
+                      method="get" th:action="@{/applications}"
+                      class="toolbar"
+                      hx-get="/applications/search"
+                      hx-trigger="change from:#searchStatus, submit"
+                      hx-target="#application-results"
+                      hx-push-url="/applications">
+                    <div class="field toolbar__field--sm">
+                        <select class="select" id="searchStatus" name="status">
+                            <option value="">All statuses</option>
+                            <option th:each="s : ${statuses}" th:value="${s.name()}"
+                                    th:text="${s}" th:selected="${s == searchStatus}"></option>
+                        </select>
+                    </div>
+                    <a class="btn btn--ghost" href="/applications">Reset</a>
+                </form>
+            </div>
+        </div>
+
+        <!-- ── Results — HTMX swap target ─────────────────────────────────── -->
+        <div id="application-results" th:fragment="applicationResults"
+             th:with="filterQuery=${(searchStatus != null ? '&status=' + searchStatus : '')}">
+
+            <th:block th:replace="~{fragments/components :: toastMarkers(${successMessage}, ${errorMessage})}"></th:block>
+
+            <p class="page-head__sub result-count">
+                <span th:text="${applicationsPage.totalElements}">0</span> application(s) found
+            </p>
+
+            <div th:if="${applicationsPage.totalElements == 0}" class="empty card">
+                <i data-lucide="file-text" class="icon-muted-lg"></i>
+                <p class="empty__title">No applications found</p>
+                <p>Applications are created from a student's detail page.</p>
+            </div>
+
+            <div class="card" th:unless="${applicationsPage.totalElements == 0}">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Course</th>
+                                <th>University</th>
+                                <th>Status</th>
+                                <th>Applied</th>
+                                <th>Decision</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="a : ${applicationsPage.content}">
+                                <td>
+                                    <a class="table__name" th:href="@{/students/{id}(id=${a.studentId})}"
+                                       th:text="${a.studentName}">Student</a>
+                                </td>
+                                <td>
+                                    <span th:text="${a.courseName}">Course</span>
+                                    <div class="table__sub" th:text="${a.courseLevel}">LEVEL</div>
+                                </td>
+                                <td><span class="table__sub" th:text="${a.universityName}">University</span></td>
+                                <td>
+                                    <th:block th:replace="~{fragments/components :: statusStamp(${a.status}, ${a.status})}"></th:block>
+                                </td>
+                                <td>
+                                    <span class="table__sub"
+                                          th:text="${a.appliedDate != null ? #strings.substring(a.appliedDate.toString(),0,10) : '—'}">—</span>
+                                </td>
+                                <td>
+                                    <span class="table__sub"
+                                          th:text="${a.decisionDate != null ? #strings.substring(a.decisionDate.toString(),0,10) : '—'}">—</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <th:block th:replace="~{fragments/pagination :: pagination(${applicationsPage}, '/applications', '/applications/search', '#application-results', ${filterQuery})}"></th:block>
+            </div>
+
+        </div><!-- /#application-results -->
+    </div>
+
+</th:block>
+</body>
+</html>

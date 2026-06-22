@@ -38,6 +38,12 @@ public final class AuditAction {
     public static final String DOCUMENT_RESUBMITTED   = "DOCUMENT_RESUBMITTED";
     public static final String DOCUMENT_DELETED       = "DOCUMENT_DELETED";
 
+    // ── University / Course (master data) ───────────────────────────────────────
+    public static final String UNIVERSITY_CREATED     = "UNIVERSITY_CREATED";
+    public static final String UNIVERSITY_UPDATED     = "UNIVERSITY_UPDATED";
+    public static final String COURSE_CREATED         = "COURSE_CREATED";
+    public static final String COURSE_UPDATED         = "COURSE_UPDATED";
+
     // ── Application ───────────────────────────────────────────────────────────
     public static final String APPLICATION_CREATED    = "APPLICATION_CREATED";
     public static final String APPLICATION_STATUS_CHANGED = "APPLICATION_STATUS_CHANGED";

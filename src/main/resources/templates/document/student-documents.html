@@ -187,6 +187,13 @@
         </div><!-- /#dossierContent -->
     </div>
 
+    <!--
+        Document modals (upload + verify). Extracted as a named fragment so both the
+        standalone documents page and the embedded student-detail "Documents" tab can
+        render them.
+    -->
+    <th:block th:fragment="documentModals">
+
     <!-- =====================================================================
          Upload modal
          Form uses hx-post + hx-encoding for multipart; on success the server
@@ -250,6 +257,28 @@
          role="dialog" aria-modal="true" aria-labelledby="verifyModalTitle">
     </div>
 
+    </th:block><!-- /documentModals -->
+
 </th:block>
+
+<!--
+    documentsTab fragment — the Documents panel embedded into the student detail page,
+    lazy-loaded over HTMX (see DocumentViewController#dossierEmbed). Reuses the same
+    dossierContent + modals as the standalone page so all upload/verify/delete actions
+    behave identically inside the tab.
+-->
+<th:block th:fragment="documentsTab"
+          xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <div class="tab-actions"
+         sec:authorize="hasAnyRole('TENANT_ADMIN','COUNSELOR','DOC_OFFICER','VISA_OFFICER','STUDENT')">
+        <button class="btn btn--primary" type="button"
+                data-upload-open aria-haspopup="dialog" aria-controls="uploadModal">
+            <i data-lucide="upload"></i><span>Add document</span>
+        </button>
+    </div>
+    <th:block th:replace="~{document/student-documents :: dossierContent}"></th:block>
+    <th:block th:replace="~{document/student-documents :: documentModals}"></th:block>
+</th:block>
+
 </body>
 </html>

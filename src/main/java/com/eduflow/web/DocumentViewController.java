@@ -54,6 +54,18 @@ public class DocumentViewController {
         }
     }
 
+    /**
+     * Returns the dossier as an embeddable fragment for the student-detail "Documents"
+     * tab. Lazy-loaded over HTMX the first time the tab is opened. Unlike {@link #dossier},
+     * this renders only the {@code documentsTab} fragment (no page shell / back link).
+     */
+    @GetMapping("/students/{studentId}/documents/embed")
+    public String dossierEmbed(@PathVariable UUID studentId, Model model) {
+        model.addAttribute("dossier", documentService.getDossier(studentId));
+        model.addAttribute("documentTypes", DocumentType.values());
+        return "document/student-documents :: documentsTab";
+    }
+
     // ── Verify form (HTMX lazy-load) ─────────────────────────────────────────
 
     /**

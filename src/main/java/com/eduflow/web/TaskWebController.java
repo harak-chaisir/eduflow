@@ -16,7 +16,8 @@ import java.util.UUID;
 
 /**
  * Thymeleaf controller for the "My Tasks" view (PRD §7.7). The list shows the open tasks
- * owned by the current user or their roles; start/complete actions post and redirect.
+ * owned by the current user or their roles; start/complete actions support both plain POST
+ * (redirect) and HTMX partial refresh (returning the {@code tasksTab} fragment).
  */
 @Controller
 @RequestMapping("/tasks")
@@ -34,24 +35,53 @@ public class TaskWebController {
     }
 
     @PostMapping("/{id}/start")
-    public String start(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
-        act(id, redirectAttributes, () -> taskService.start(id), "Task started.");
+    public String start(@PathVariable UUID id,
+                        @RequestParam(required = false) UUID studentId,
+                        @RequestHeader(value = "HX-Request", required = false) String htmxRequest,
+                        Model model,
+                        RedirectAttributes redirectAttributes) {
+        try {
+            taskService.start(id);
+            if (htmxRequest != null && studentId != null) {
+                model.addAttribute("successMessage", "Task started.");
+                model.addAttribute("studentTasks", taskService.listForStudent(studentId));
+                return "tasks/student-tasks :: tasksTab";
+            }
+            redirectAttributes.addFlashAttribute("successMessage", "Task started.");
+        } catch (TaskNotFoundException | InvalidTaskStatusTransitionException ex) {
+            if (htmxRequest != null && studentId != null) {
+                model.addAttribute("errorMessage", ex.getMessage());
+                model.addAttribute("studentTasks", taskService.listForStudent(studentId));
+                return "tasks/student-tasks :: tasksTab";
+            }
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
         return "redirect:/tasks";
     }
 
     @PostMapping("/{id}/complete")
-    public String complete(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
-        act(id, redirectAttributes, () -> taskService.complete(id), "Task completed.");
-        return "redirect:/tasks";
-    }
-
-    private void act(UUID id, RedirectAttributes ra, Runnable action, String success) {
+    public String complete(@PathVariable UUID id,
+                           @RequestParam(required = false) UUID studentId,
+                           @RequestHeader(value = "HX-Request", required = false) String htmxRequest,
+                           Model model,
+                           RedirectAttributes redirectAttributes) {
         try {
-            action.run();
-            ra.addFlashAttribute("successMessage", success);
+            taskService.complete(id);
+            if (htmxRequest != null && studentId != null) {
+                model.addAttribute("successMessage", "Task completed.");
+                model.addAttribute("studentTasks", taskService.listForStudent(studentId));
+                return "tasks/student-tasks :: tasksTab";
+            }
+            redirectAttributes.addFlashAttribute("successMessage", "Task completed.");
         } catch (TaskNotFoundException | InvalidTaskStatusTransitionException ex) {
-            ra.addFlashAttribute("errorMessage", ex.getMessage());
+            if (htmxRequest != null && studentId != null) {
+                model.addAttribute("errorMessage", ex.getMessage());
+                model.addAttribute("studentTasks", taskService.listForStudent(studentId));
+                return "tasks/student-tasks :: tasksTab";
+            }
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
+        return "redirect:/tasks";
     }
 
     private void addNavAttributes(Model model, Authentication auth) {

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<!--
+    Student tasks panel — rendered as an embeddable fragment only.
+    Lazy-loaded into the student detail page "Tasks" tab over HTMX.
+    Never rendered as a standalone full page.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<!--
+    tasksTab fragment — injected into #tab-tasks via HTMX on first click.
+    Shows all tasks for the student (all statuses), ordered by due date.
+-->
+<th:block th:fragment="tasksTab">
+
+    <!-- Flash toasts (carried from task status-change responses) -->
+    <th:block th:replace="~{fragments/components :: toastMarkers(${successMessage}, ${errorMessage})}"></th:block>
+
+    <!-- OOB: update the Tasks tab count badge after the panel loads -->
+    <span id="tasksTabCount" hx-swap-oob="true" class="subnav__count"
+          th:hidden="${studentTasks == null or studentTasks.isEmpty()}"
+          th:text="${studentTasks != null ? studentTasks.size() : 0}">0</span>
+
+    <div class="card">
+        <div class="card__header">
+            <span class="card__title">Tasks</span>
+        </div>
+
+        <!-- Empty state -->
+        <div class="card__body" th:if="${studentTasks == null or studentTasks.isEmpty()}">
+            <p class="table__sub is-flush">No tasks for this student yet. Tasks are generated automatically when a workflow stage is entered.</p>
+        </div>
+
+        <!-- Task table -->
+        <div class="table-wrap" th:unless="${studentTasks == null or studentTasks.isEmpty()}">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Task</th>
+                        <th>Assigned to</th>
+                        <th>Priority</th>
+                        <th>Due</th>
+                        <th>Status</th>
+                        <th sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN','DOC_OFFICER','VISA_OFFICER')">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="task : ${studentTasks}">
+                        <!-- Title + description -->
+                        <td>
+                            <span class="table__name" th:text="${task.title}">Task title</span>
+                            <div class="table__sub" th:if="${task.description}" th:text="${task.description}">desc</div>
+                        </td>
+
+                        <!-- Assigned role (strip ROLE_ prefix for readability) -->
+                        <td>
+                            <span class="table__sub"
+                                  th:text="${task.assignedRole != null
+                                            ? #strings.replace(#strings.replace(task.assignedRole, 'ROLE_', ''), '_', ' ')
+                                            : '—'}">Role</span>
+                        </td>
+
+                        <!-- Priority badge -->
+                        <td>
+                            <span class="stamp"
+                                  th:classappend="${task.priority.name() == 'HIGH'} ? 'stamp--rejected'
+                                                : (${task.priority.name() == 'LOW'} ? 'stamp--empty'
+                                                : 'stamp--pending')"
+                                  th:text="${task.priority}">MEDIUM</span>
+                        </td>
+
+                        <!-- Due date (highlighted when overdue) -->
+                        <td>
+                            <span th:if="${task.dueAt != null}"
+                                  th:classappend="${task.overdue} ? 'text-danger font-semibold'"
+                                  th:text="${#temporals.format(task.dueAt, 'yyyy-MM-dd')}">date</span>
+                            <span th:unless="${task.dueAt != null}" class="table__sub">—</span>
+                            <div class="table__sub" style="color:var(--status-rejected-fg)"
+                                 th:if="${task.overdue}">Overdue</div>
+                        </td>
+
+                        <!-- Status stamp -->
+                        <td>
+                            <th:block th:replace="~{fragments/components :: statusStamp(${task.status}, ${task.status})}"></th:block>
+                        </td>
+
+                        <!-- Actions: start / complete / cancel -->
+                        <td sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN','DOC_OFFICER','VISA_OFFICER')">
+                            <div class="table__actions">
+
+                                <!-- Start (PENDING → IN_PROGRESS) -->
+                                <form th:if="${task.status.name() == 'PENDING'}"
+                                      th:action="@{/tasks/{id}/start(id=${task.id})}" method="post"
+                                      th:hx-post="@{/tasks/{id}/start(id=${task.id})}"
+                                      hx-target="#tab-tasks" hx-swap="innerHTML">
+                                    <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                                    <input type="hidden" name="studentId" th:value="${task.studentId}" />
+                                    <button class="btn btn--ghost btn--sm" type="submit"
+                                            aria-label="Start task">
+                                        <i data-lucide="play" aria-hidden="true"></i><span>Start</span>
+                                    </button>
+                                </form>
+
+                                <!-- Complete (PENDING or IN_PROGRESS → COMPLETED) -->
+                                <form th:if="${task.status.name() == 'PENDING' or task.status.name() == 'IN_PROGRESS'}"
+                                      th:action="@{/tasks/{id}/complete(id=${task.id})}" method="post"
+                                      th:hx-post="@{/tasks/{id}/complete(id=${task.id})}"
+                                      hx-target="#tab-tasks" hx-swap="innerHTML"
+                                      hx-confirm="Mark this task as complete?">
+                                    <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                                    <input type="hidden" name="studentId" th:value="${task.studentId}" />
+                                    <button class="btn btn--ghost btn--sm" type="submit"
+                                            aria-label="Complete task">
+                                        <i data-lucide="check" aria-hidden="true"></i><span>Complete</span>
+                                    </button>
+                                </form>
+
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</th:block>
+
+</body>
+</html>
+
+

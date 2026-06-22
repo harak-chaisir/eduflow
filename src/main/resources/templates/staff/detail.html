@@ -3,6 +3,9 @@
     Staff detail page.
     Plugs into the shared sidebar shell via fragments/layout.
     Active nav: 'staff'
+
+    Layout: profile header + a sub-navigation tab bar (Caseload / Activity / Access).
+    Tabs switch in-page via the controller in eduflow.js.
 -->
 <html th:replace="~{fragments/layout :: layout(${#strings.isEmpty(staff.fullName) ? staff.email : staff.fullName}, 'Staff / ' + ${#strings.isEmpty(staff.fullName) ? staff.email : staff.fullName}, 'staff', ~{::content})}"
       xmlns:th="http://www.thymeleaf.org"
@@ -61,184 +64,206 @@
             </div>
         </div>
 
-        <!-- ── Two-column grid ─────────────────────────────────────────────── -->
-        <div class="detail-grid">
+        <!-- ── Sub-navigation tabs ─────────────────────────────────────────── -->
+        <nav class="subnav" data-tabs aria-label="Staff sections">
+            <button class="subnav__tab is-active" type="button" role="tab"
+                    data-tab-target="#tab-caseload" data-tab-name="caseload">
+                <i data-lucide="users"></i><span>Caseload</span>
+                <span class="subnav__count" th:if="${caseload.hasCaseload()}"
+                      th:text="${caseload.count()}">0</span>
+            </button>
+            <button class="subnav__tab" type="button" role="tab"
+                    data-tab-target="#tab-activity" data-tab-name="activity">
+                <i data-lucide="activity"></i><span>Activity</span>
+            </button>
+            <button class="subnav__tab" type="button" role="tab"
+                    data-tab-target="#tab-access" data-tab-name="access">
+                <i data-lucide="shield"></i><span>Access</span>
+            </button>
+        </nav>
 
-            <!-- LEFT -->
-            <div class="stack">
+        <!-- ══ Caseload panel ═══════════════════════════════════════════════ -->
+        <section id="tab-caseload" class="tab-panel">
+            <!-- Assigned students -->
+            <div class="card">
+                <div class="card__header">
+                    <span class="card__title">
+                        <i data-lucide="users" class="icon-sm"></i> Assigned students
+                    </span>
+                    <span class="card__meta"
+                          th:text="${caseload.hasCaseload()} ? (${caseload.count()} + ' active students') : 'No students directly assigned'">caption</span>
+                </div>
 
-                <!-- Assigned students -->
-                <div class="card">
-                    <div class="card__header">
-                        <span class="card__title">
-                            <i data-lucide="users" class="icon-sm"></i> Assigned students
-                        </span>
-                        <span class="card__meta"
-                              th:text="${caseload.hasCaseload()} ? (${caseload.count()} + ' active students') : 'No students directly assigned'">caption</span>
+                <!-- Has caseload: pipeline + student rows -->
+                <th:block th:if="${caseload.hasCaseload()}">
+                    <div class="pipeline-strip">
+                        <div class="pipeline-cell" th:each="stage : ${caseload.pipeline()}">
+                            <div class="pipeline-cell__label">
+                                <span class="dot" th:attr="data-status=${stage.status().name()}"></span>
+                                <span th:text="${stage.status()}">Stage</span>
+                            </div>
+                            <div class="pipeline-cell__count" th:text="${stage.count()}">0</div>
+                        </div>
                     </div>
+                    <div class="table-wrap">
+                        <table class="table">
+                            <tbody>
+                                <tr th:each="s : ${caseload.students()}">
+                                    <td>
+                                        <div class="table__primary">
+                                            <th:block th:replace="~{fragments/components :: avatar(${s.firstName}, 'avatar--sm')}"></th:block>
+                                            <a class="table__name" th:href="@{/students/{id}(id=${s.id})}"
+                                               th:text="${s.fullName}">Student</a>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <th:block th:replace="~{fragments/components :: statusStamp(${s.status}, ${s.status})}"></th:block>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card__footer card__footer--center">
+                        <a class="inline-link" href="/students">View all students</a>
+                    </div>
+                </th:block>
 
-                    <!-- Has caseload: pipeline + student rows -->
-                    <th:block th:if="${caseload.hasCaseload()}">
-                        <div class="pipeline-strip">
-                            <div class="pipeline-cell" th:each="stage : ${caseload.pipeline()}">
-                                <div class="pipeline-cell__label">
-                                    <span class="dot" th:attr="data-status=${stage.status().name()}"></span>
-                                    <span th:text="${stage.status()}">Stage</span>
-                                </div>
-                                <div class="pipeline-cell__count" th:text="${stage.count()}">0</div>
+                <!-- No caseload -->
+                <th:block th:unless="${caseload.hasCaseload()}">
+                    <div class="card__body empty empty--inline">
+                        <i data-lucide="briefcase" class="icon-muted-lg"></i>
+                        <p class="empty__title">No direct caseload</p>
+                        <p class="table__sub">
+                            This account works across the roster rather than owning a fixed set of students.
+                        </p>
+                    </div>
+                </th:block>
+            </div>
+        </section>
+
+        <!-- ══ Activity panel ═══════════════════════════════════════════════ -->
+        <section id="tab-activity" class="tab-panel" hidden>
+            <div class="card">
+                <div class="card__header">
+                    <span class="card__title"><i data-lucide="activity" class="icon-sm"></i> Recent activity</span>
+                </div>
+                <div class="card__body">
+                    <div th:if="${activity.isEmpty()}" class="table__sub">No recorded activity yet.</div>
+                    <ul class="activity-list" th:unless="${activity.isEmpty()}">
+                        <li class="activity-item" th:each="a : ${activity}">
+                            <span class="activity-item__icon"><i th:attr="data-lucide=${a.icon()}"></i></span>
+                            <div class="activity-item__body">
+                                <div class="activity-item__text" th:text="${a.label()}">Did a thing</div>
+                                <div class="activity-item__time"
+                                     th:text="${a.time() != null ? #strings.replace(#strings.substring(a.time().toString(), 0, 16), 'T', ' ') : ''}">time</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══ Access panel ═════════════════════════════════════════════════ -->
+        <section id="tab-access" class="tab-panel" hidden>
+            <div class="detail-grid">
+
+                <div class="stack">
+                    <!-- Role & access -->
+                    <div class="card">
+                        <div class="card__header"><span class="card__title">Role &amp; access</span></div>
+                        <div class="card__body access-list">
+                            <div class="access-item access-item--allowed" th:each="p : ${permissions.allowed()}">
+                                <i data-lucide="circle-check" class="icon-sm"></i><span th:text="${p}">Allowed</span>
+                            </div>
+                            <div class="access-divider" th:if="${!permissions.restricted().isEmpty()}"></div>
+                            <div class="access-item access-item--denied" th:each="p : ${permissions.restricted()}">
+                                <i data-lucide="circle-x" class="icon-sm"></i><span th:text="${p}">Restricted</span>
                             </div>
                         </div>
-                        <div class="table-wrap">
-                            <table class="table">
-                                <tbody>
-                                    <tr th:each="s : ${caseload.students()}">
-                                        <td>
-                                            <div class="table__primary">
-                                                <th:block th:replace="~{fragments/components :: avatar(${s.firstName}, 'avatar--sm')}"></th:block>
-                                                <a class="table__name" th:href="@{/students/{id}(id=${s.id})}"
-                                                   th:text="${s.fullName}">Student</a>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <th:block th:replace="~{fragments/components :: statusStamp(${s.status}, ${s.status})}"></th:block>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="card__footer card__footer--center">
-                            <a class="inline-link" href="/students">View all students</a>
-                        </div>
-                    </th:block>
+                    </div>
 
-                    <!-- No caseload -->
-                    <th:block th:unless="${caseload.hasCaseload()}">
-                        <div class="card__body empty empty--inline">
-                            <i data-lucide="briefcase" class="icon-muted-lg"></i>
-                            <p class="empty__title">No direct caseload</p>
-                            <p class="table__sub">
-                                This account works across the roster rather than owning a fixed set of students.
+                    <!-- Record info -->
+                    <div class="card">
+                        <div class="card__header"><span class="card__title">Record info</span></div>
+                        <div class="card__body">
+                            <dl class="info-list">
+                                <div class="info-list__row">
+                                    <dt>User ID</dt>
+                                    <dd class="is-mono record-id" th:text="${staff.id}">—</dd>
+                                </div>
+                                <div class="info-list__row">
+                                    <dt>Joined</dt>
+                                    <dd th:text="${staff.createdAt != null ? #strings.substring(staff.createdAt.toString(), 0, 10) : '—'}">—</dd>
+                                </div>
+                                <div class="info-list__row">
+                                    <dt>Invited by</dt>
+                                    <dd th:text="${staff.createdBy != null ? staff.createdBy : '—'}">—</dd>
+                                </div>
+                                <div class="info-list__row">
+                                    <dt>Email verified</dt>
+                                    <dd>
+                                        <span th:if="${staff.emailVerified}" class="verified verified--yes">
+                                            <i data-lucide="badge-check" class="icon-sm"></i> Verified</span>
+                                        <span th:unless="${staff.emailVerified}" class="verified verified--no">Pending</span>
+                                    </dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stack">
+                    <!--
+                        Account status card.
+                        Self-contained fragment (only uses ${staff} + ${errorMessage}) so the status
+                        POST can swap just this element over HTMX.
+                    -->
+                    <div id="statusCard" th:fragment="statusCard" class="card">
+                        <div class="card__header"><span class="card__title">Account status</span></div>
+                        <div class="card__body stack">
+
+                            <div th:if="${errorMessage}" class="flash flash--error">
+                                <i data-lucide="alert-triangle"></i>
+                                <span th:text="${errorMessage}">Error</span>
+                            </div>
+
+                            <p class="table__sub is-flush">
+                                Current status: <strong th:text="${staff.status}">ACTIVE</strong>.
                             </p>
+                            <p class="table__sub is-flush" th:if="${staff.status.name() == 'PENDING_VERIFICATION'}">
+                                This staff member has not set their password yet. Use <em>Reset password</em>
+                                to re-issue their activation link.
+                            </p>
+
+                            <form th:if="${staff.status.name() != 'INACTIVE'}"
+                                  th:action="@{/staff/{id}/status(id=${staff.id})}" method="post"
+                                  th:hx-post="@{/staff/{id}/status(id=${staff.id})}"
+                                  hx-target="#statusCard" hx-swap="outerHTML"
+                                  hx-confirm="Deactivate this staff member? They will lose access immediately.">
+                                <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                                <input type="hidden" name="newStatus" value="INACTIVE" />
+                                <button type="submit" class="btn btn--full btn--ghost text-danger">
+                                    <i data-lucide="user-x"></i><span>Deactivate</span>
+                                </button>
+                            </form>
+
+                            <form th:if="${staff.status.name() != 'ACTIVE'}"
+                                  th:action="@{/staff/{id}/status(id=${staff.id})}" method="post"
+                                  th:hx-post="@{/staff/{id}/status(id=${staff.id})}"
+                                  hx-target="#statusCard" hx-swap="outerHTML">
+                                <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                                <input type="hidden" name="newStatus" value="ACTIVE" />
+                                <button type="submit" class="btn btn--full btn--primary">
+                                    <i data-lucide="user-check"></i><span>Activate</span>
+                                </button>
+                            </form>
                         </div>
-                    </th:block>
+                    </div>
                 </div>
 
-                <!-- Recent activity -->
-                <div class="card">
-                    <div class="card__header">
-                        <span class="card__title"><i data-lucide="activity" class="icon-sm"></i> Recent activity</span>
-                    </div>
-                    <div class="card__body">
-                        <div th:if="${activity.isEmpty()}" class="table__sub">No recorded activity yet.</div>
-                        <ul class="activity-list" th:unless="${activity.isEmpty()}">
-                            <li class="activity-item" th:each="a : ${activity}">
-                                <span class="activity-item__icon"><i th:attr="data-lucide=${a.icon()}"></i></span>
-                                <div class="activity-item__body">
-                                    <div class="activity-item__text" th:text="${a.label()}">Did a thing</div>
-                                    <div class="activity-item__time"
-                                         th:text="${a.time() != null ? #strings.replace(#strings.substring(a.time().toString(), 0, 16), 'T', ' ') : ''}">time</div>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
             </div>
+        </section>
 
-            <!-- RIGHT -->
-            <div class="stack">
-
-                <!--
-                    Account status card.
-                    Self-contained fragment (only uses ${staff} + ${errorMessage}) so the status
-                    POST can swap just this element over HTMX.
-                -->
-                <div id="statusCard" th:fragment="statusCard" class="card">
-                    <div class="card__header"><span class="card__title">Account status</span></div>
-                    <div class="card__body stack">
-
-                        <div th:if="${errorMessage}" class="flash flash--error">
-                            <i data-lucide="alert-triangle"></i>
-                            <span th:text="${errorMessage}">Error</span>
-                        </div>
-
-                        <p class="table__sub is-flush">
-                            Current status: <strong th:text="${staff.status}">ACTIVE</strong>.
-                        </p>
-                        <p class="table__sub is-flush" th:if="${staff.status.name() == 'PENDING_VERIFICATION'}">
-                            This staff member has not set their password yet. Use <em>Reset password</em>
-                            to re-issue their activation link.
-                        </p>
-
-                        <form th:if="${staff.status.name() != 'INACTIVE'}"
-                              th:action="@{/staff/{id}/status(id=${staff.id})}" method="post"
-                              th:hx-post="@{/staff/{id}/status(id=${staff.id})}"
-                              hx-target="#statusCard" hx-swap="outerHTML"
-                              hx-confirm="Deactivate this staff member? They will lose access immediately.">
-                            <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
-                            <input type="hidden" name="newStatus" value="INACTIVE" />
-                            <button type="submit" class="btn btn--full btn--ghost text-danger">
-                                <i data-lucide="user-x"></i><span>Deactivate</span>
-                            </button>
-                        </form>
-
-                        <form th:if="${staff.status.name() != 'ACTIVE'}"
-                              th:action="@{/staff/{id}/status(id=${staff.id})}" method="post"
-                              th:hx-post="@{/staff/{id}/status(id=${staff.id})}"
-                              hx-target="#statusCard" hx-swap="outerHTML">
-                            <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
-                            <input type="hidden" name="newStatus" value="ACTIVE" />
-                            <button type="submit" class="btn btn--full btn--primary">
-                                <i data-lucide="user-check"></i><span>Activate</span>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Role & access -->
-                <div class="card">
-                    <div class="card__header"><span class="card__title">Role &amp; access</span></div>
-                    <div class="card__body access-list">
-                        <div class="access-item access-item--allowed" th:each="p : ${permissions.allowed()}">
-                            <i data-lucide="circle-check" class="icon-sm"></i><span th:text="${p}">Allowed</span>
-                        </div>
-                        <div class="access-divider" th:if="${!permissions.restricted().isEmpty()}"></div>
-                        <div class="access-item access-item--denied" th:each="p : ${permissions.restricted()}">
-                            <i data-lucide="circle-x" class="icon-sm"></i><span th:text="${p}">Restricted</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Record info -->
-                <div class="card">
-                    <div class="card__header"><span class="card__title">Record info</span></div>
-                    <div class="card__body">
-                        <dl class="info-list">
-                            <div class="info-list__row">
-                                <dt>User ID</dt>
-                                <dd class="is-mono record-id" th:text="${staff.id}">—</dd>
-                            </div>
-                            <div class="info-list__row">
-                                <dt>Joined</dt>
-                                <dd th:text="${staff.createdAt != null ? #strings.substring(staff.createdAt.toString(), 0, 10) : '—'}">—</dd>
-                            </div>
-                            <div class="info-list__row">
-                                <dt>Invited by</dt>
-                                <dd th:text="${staff.createdBy != null ? staff.createdBy : '—'}">—</dd>
-                            </div>
-                            <div class="info-list__row">
-                                <dt>Email verified</dt>
-                                <dd>
-                                    <span th:if="${staff.emailVerified}" class="verified verified--yes">
-                                        <i data-lucide="badge-check" class="icon-sm"></i> Verified</span>
-                                    <span th:unless="${staff.emailVerified}" class="verified verified--no">Pending</span>
-                                </dd>
-                            </div>
-                        </dl>
-                    </div>
-                </div>
-            </div>
-
-        </div>
     </div>
 
 </th:block>

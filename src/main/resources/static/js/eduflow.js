@@ -17,14 +17,31 @@
     // ── HTMX: re-render Lucide icons after any partial swap ───────────────────
     document.addEventListener("htmx:afterSwap", function () {
         renderIcons();
+        // Re-wire detail-page tabs (e.g. after an outerHTML panel swap).
+        wireTabs();
         // Re-wire upload modal buttons inside freshly swapped content.
         wireUploadModal();
         // Re-wire verify modal decision logic if the modal was just populated.
         wireVerifyDecision();
         // Re-wire colour pickers inside freshly swapped content (e.g. settings card).
         wireColorPicker();
+        // Re-wire the right-side drawer (open/close triggers may live in swapped content).
+        wireDrawer();
         // Surface any flash messages carried in the swapped fragment as toasts.
         scanToasts();
+    });
+
+    // ── HTMX: close the apply-to-course drawer once the applications panel updates ──
+    document.addEventListener("htmx:afterSwap", function (evt) {
+        if (evt.detail.target && evt.detail.target.id === "applicationsPanel") {
+            var drawer = document.getElementById("applyDrawer");
+            if (drawer && drawer.classList.contains("is-open") && drawer._close) {
+                drawer._close();
+                // Reveal the Applications tab so the new application is visible.
+                var appsTab = document.querySelector('[data-tab-target="#tab-applications"]');
+                if (appsTab) { appsTab.click(); }
+            }
+        }
     });
 
     // ── HTMX: re-render Lucide icons after OOB swaps ─────────────────────────
@@ -32,6 +49,40 @@
         renderIcons();
         scanToasts();
     });
+
+    // ── HTMX: surface a retry state if the lazy Documents tab fails to load ───
+    // The tab uses `hx-trigger="click once"`, so a failed request leaves the
+    // spinner stranded with no way to retry. Catch the failure and offer a retry
+    // that re-issues the request directly (bypassing the spent `once` trigger).
+    ["htmx:responseError", "htmx:sendError", "htmx:timeout"].forEach(function (ev) {
+        document.addEventListener(ev, function (evt) {
+            var target = evt.detail && evt.detail.target;
+            if (!target || target.id !== "tab-documents") { return; }
+            renderDocTabError(target);
+        });
+    });
+
+    function renderDocTabError(panel) {
+        var btn = document.getElementById("tab-documents-btn");
+        var url = btn ? btn.getAttribute("hx-get") : null;
+        panel.innerHTML =
+            '<div class="status-note">' +
+            '<i data-lucide="alert-triangle"></i>' +
+            '<p>Couldn’t load documents. ' +
+            '<button type="button" class="btn btn--ghost btn--sm" data-doc-retry>Retry</button></p>' +
+            '</div>';
+        var retry = panel.querySelector("[data-doc-retry]");
+        if (retry && url && window.htmx) {
+            retry.addEventListener("click", function () {
+                panel.innerHTML =
+                    '<div class="tab-loading"><i data-lucide="loader-circle" aria-hidden="true"></i>' +
+                    '<span>Loading documents…</span></div>';
+                renderIcons();
+                window.htmx.ajax("GET", url, "#tab-documents");
+            });
+        }
+        renderIcons();
+    }
 
     // ── HTMX: close the upload modal after a successful dossierContent swap ───
     document.addEventListener("htmx:afterSwap", function (evt) {
@@ -63,9 +114,11 @@
         renderIcons();
         wireSidebarToggle();
         wireUserMenu();
+        wireTabs();
         wireFileInputs();
         wireUploadModal();
         wireColorPicker();
+        wireDrawer();
         scanToasts();
         // Verify modal is now HTMX-loaded on demand — no static wire needed.
     });
@@ -157,6 +210,73 @@
         });
     }
 
+    /* Right-side slide-over drawer.
+       A [data-drawer] element is the backdrop; its inner .drawer is the panel.
+       [data-drawer-open="#drawerId"] buttons open it; [data-drawer-close] closes it,
+       as does a backdrop click or Escape. Open/close methods are stashed on the
+       element (_open/_close) so other handlers (e.g. HTMX swaps) can drive it.
+       Idempotent — safe to re-run on DOMContentLoaded and after every HTMX swap. */
+    function wireDrawer() {
+        var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([hidden]),' +
+            'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+        document.querySelectorAll("[data-drawer]").forEach(function (backdrop) {
+            if (backdrop.dataset.drawerWired === "1") { return; }
+            backdrop.dataset.drawerWired = "1";
+
+            backdrop._open = function () {
+                backdrop._previousFocus = document.activeElement;
+                backdrop.classList.add("is-open");
+                backdrop.removeAttribute("aria-hidden");
+                var focusable = backdrop.querySelectorAll(FOCUSABLE);
+                if (focusable.length) { focusable[0].focus(); }
+                var trap = makeFocusTrap(backdrop);
+                backdrop._focusTrap = trap;
+                document.addEventListener("keydown", trap);
+            };
+            backdrop._close = function () {
+                backdrop.classList.remove("is-open");
+                backdrop.setAttribute("aria-hidden", "true");
+                if (backdrop._focusTrap) {
+                    document.removeEventListener("keydown", backdrop._focusTrap);
+                    backdrop._focusTrap = null;
+                }
+                if (backdrop._previousFocus && backdrop._previousFocus.focus) {
+                    backdrop._previousFocus.focus();
+                    backdrop._previousFocus = null;
+                }
+            };
+
+            // Click on the backdrop itself (not the panel) closes the drawer.
+            backdrop.addEventListener("click", function (e) {
+                if (e.target === backdrop) { backdrop._close(); }
+            });
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape" && backdrop.classList.contains("is-open")) {
+                    backdrop._close();
+                }
+            });
+        });
+
+        document.querySelectorAll("[data-drawer-open]").forEach(function (btn) {
+            if (btn.dataset.drawerTriggerWired === "1") { return; }
+            btn.dataset.drawerTriggerWired = "1";
+            btn.addEventListener("click", function () {
+                var target = document.querySelector(btn.getAttribute("data-drawer-open"));
+                if (target && target._open) { target._open(); }
+            });
+        });
+
+        document.querySelectorAll("[data-drawer-close]").forEach(function (btn) {
+            if (btn.dataset.drawerCloseWired === "1") { return; }
+            btn.dataset.drawerCloseWired = "1";
+            btn.addEventListener("click", function () {
+                var backdrop = btn.closest("[data-drawer]");
+                if (backdrop && backdrop._close) { backdrop._close(); }
+            });
+        });
+    }
+
     // ── Focus trap ────────────────────────────────────────────────────────────
     function makeFocusTrap(container) {
         return function (e) {
@@ -181,6 +301,54 @@
         if (window.lucide && typeof window.lucide.createIcons === "function") {
             window.lucide.createIcons();
         }
+    }
+
+    /* Detail-page sub-navigation (tabbed panels).
+       A [data-tabs] container holds [data-tab-target="#panelId"] buttons; clicking one
+       reveals its target panel and hides the siblings — no page reload. The active tab is
+       mirrored into location.hash (via data-tab-name) so it survives HTMX panel swaps.
+       Idempotent: safe to re-run on DOMContentLoaded and after every HTMX swap. */
+    function wireTabs() {
+        document.querySelectorAll("[data-tabs]").forEach(function (group) {
+            var tabs = Array.prototype.slice.call(group.querySelectorAll("[data-tab-target]"));
+            if (!tabs.length) { return; }
+
+            function show(tab, updateHash) {
+                tabs.forEach(function (t) {
+                    var isActive = t === tab;
+                    t.classList.toggle("is-active", isActive);
+                    t.setAttribute("aria-selected", isActive ? "true" : "false");
+                    var panel = document.querySelector(t.getAttribute("data-tab-target"));
+                    if (panel) { panel.hidden = !isActive; }
+                });
+                var name = tab.getAttribute("data-tab-name");
+                if (updateHash && name) {
+                    history.replaceState(null, "", "#" + name);
+                }
+            }
+
+            tabs.forEach(function (tab) {
+                if (tab.dataset.tabWired !== "1") {
+                    tab.dataset.tabWired = "1";
+                    tab.addEventListener("click", function () { show(tab, true); });
+                }
+            });
+
+            // Initial selection: location.hash > server-marked is-active > first tab.
+            var initial = null;
+            var hash = (location.hash || "").replace(/^#/, "");
+            if (hash) {
+                initial = tabs.filter(function (t) {
+                    return t.getAttribute("data-tab-name") === hash;
+                })[0] || null;
+            }
+            if (!initial) {
+                initial = tabs.filter(function (t) {
+                    return t.classList.contains("is-active");
+                })[0] || tabs[0];
+            }
+            show(initial, false);
+        });
     }
 
     /* Mobile: show/hide the sidebar. */
