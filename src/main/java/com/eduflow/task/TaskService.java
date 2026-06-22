@@ -80,6 +80,20 @@ public class TaskService {
 
     // ── Read ───────────────────────────────────────────────────────────────────
 
+    /** All tasks for a specific student in the calling user's tenant, newest first. */
+    @Transactional(readOnly = true)
+    public List<TaskResponse> listForStudent(UUID studentId) {
+        UUID tenantId = resolvedTenantId();
+        return taskRepository.findByTenantIdAndStudentId(tenantId, studentId).stream()
+                .sorted(java.util.Comparator
+                        .comparing(com.eduflow.task.Task::getDueAt,
+                                java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+                        .thenComparing(com.eduflow.common.BaseEntity::getCreatedAt,
+                                java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+                .map(TaskResponse::from)
+                .toList();
+    }
+
     /** Open tasks visible to the calling user (assigned to them or to one of their roles). */
     @Transactional(readOnly = true)
     public List<TaskResponse> listMyTasks() {

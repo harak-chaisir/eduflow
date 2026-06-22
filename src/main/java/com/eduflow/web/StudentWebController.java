@@ -1,8 +1,13 @@
 package com.eduflow.web;
 
+import com.eduflow.application.ApplicationService;
+import com.eduflow.application.ApplicationStatus;
+import com.eduflow.document.DocumentService;
 import com.eduflow.security.EduFlowUserDetails;
 import com.eduflow.student.*;
 import com.eduflow.student.dto.*;
+import com.eduflow.task.TaskService;
+import com.eduflow.university.CourseService;
 import com.eduflow.workflow.InvalidWorkflowTransitionException;
 import com.eduflow.workflow.RequiredDocumentsMissingException;
 import com.eduflow.workflow.StudentWorkflowService;
@@ -48,6 +53,10 @@ public class StudentWebController {
     private final StudentService studentService;
     private final StudentWorkflowService studentWorkflowService;
     private final WorkflowTemplateService workflowTemplateService;
+    private final ApplicationService applicationService;
+    private final CourseService courseService;
+    private final DocumentService documentService;
+    private final TaskService taskService;
 
     // ── List / Search ────────────────────────────────────────────────────────
 
@@ -169,6 +178,8 @@ public class StudentWebController {
         try {
             model.addAttribute("student", studentService.getStudent(id));
             addWorkflowModel(model, id);
+            addApplicationsModel(model, id);
+            addDocumentReadiness(model, id);
             return "students/detail";
         } catch (StudentNotFoundException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
@@ -178,34 +189,76 @@ public class StudentWebController {
 
     // ── Workflow (assign / advance) ───────────────────────────────────────────
 
-    /** Assigns a workflow template to the student. */
+    /** Assigns a workflow template to the student. Supports HTMX partial refresh. */
     @PostMapping("/{id}/workflow/assign")
     @PreAuthorize("hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')")
-    public String assignWorkflow(@PathVariable UUID id, @RequestParam UUID templateId,
+    public String assignWorkflow(@PathVariable UUID id,
+                                 @RequestParam UUID templateId,
+                                 @RequestHeader(value = "HX-Request", required = false) String htmxRequest,
+                                 Model model,
                                  RedirectAttributes redirectAttributes) {
         try {
             studentWorkflowService.assignWorkflow(id, templateId);
+            if (htmxRequest != null) {
+                model.addAttribute("student", studentService.getStudent(id));
+                addWorkflowModel(model, id);
+                model.addAttribute("successMessage", "Workflow assigned.");
+                return "students/detail :: workflowCard";
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Workflow assigned.");
         } catch (WorkflowArchivedException ex) {
+            if (htmxRequest != null) {
+                model.addAttribute("student", studentService.getStudent(id));
+                addWorkflowModel(model, id);
+                model.addAttribute("errorMessage", ex.getMessage());
+                return "students/detail :: workflowCard";
+            }
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/students/" + id;
     }
 
-    /** Advances the student's workflow instance to the chosen stage. */
+    /** Advances the student's workflow instance to the chosen stage. Supports HTMX partial refresh. */
     @PostMapping("/{id}/workflow/{instanceId}/move")
     @PreAuthorize("hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN','DOC_OFFICER','VISA_OFFICER')")
-    public String moveWorkflowStage(@PathVariable UUID id, @PathVariable UUID instanceId,
+    public String moveWorkflowStage(@PathVariable UUID id,
+                                    @PathVariable UUID instanceId,
                                     @RequestParam UUID toStageId,
                                     @RequestParam(required = false) String notes,
+                                    @RequestHeader(value = "HX-Request", required = false) String htmxRequest,
+                                    Model model,
                                     RedirectAttributes redirectAttributes) {
         try {
             studentWorkflowService.moveStage(instanceId, toStageId, notes);
+            if (htmxRequest != null) {
+                model.addAttribute("student", studentService.getStudent(id));
+                addWorkflowModel(model, id);
+                model.addAttribute("successMessage", "Workflow advanced.");
+                return "students/detail :: workflowCard";
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Workflow advanced.");
         } catch (InvalidWorkflowTransitionException | RequiredDocumentsMissingException ex) {
+            if (htmxRequest != null) {
+                model.addAttribute("student", studentService.getStudent(id));
+                addWorkflowModel(model, id);
+                model.addAttribute("errorMessage", ex.getMessage());
+                return "students/detail :: workflowCard";
+            }
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/students/" + id;
+    }
+
+    // ── Tasks embed (HTMX lazy-load) ─────────────────────────────────────────
+
+    /**
+     * Returns the tasks panel fragment for the student detail page.
+     * Lazy-loaded over HTMX the first time the Tasks tab is opened.
+     */
+    @GetMapping("/{id}/tasks/embed")
+    public String tasksEmbed(@PathVariable UUID id, Model model) {
+        model.addAttribute("studentTasks", taskService.listForStudent(id));
+        return "tasks/student-tasks :: tasksTab";
     }
 
     /** Adds the student's workflow instance (if any) + assignable templates to the model. */
@@ -216,6 +269,26 @@ public class StudentWebController {
                 && workflow.get().getStatus() == com.eduflow.workflow.InstanceStatus.ACTIVE;
         if (!hasActive) {
             model.addAttribute("assignableWorkflows", workflowTemplateService.listAssignable());
+        }
+    }
+
+    /** Adds the student's applications + the active-course picker for the detail panel. */
+    private void addApplicationsModel(Model model, UUID studentId) {
+        model.addAttribute("studentApplications", applicationService.listForStudent(studentId));
+        model.addAttribute("applicableCourses", courseService.listActive());
+        model.addAttribute("panelStudentId", studentId);
+        model.addAttribute("applicationStatuses", ApplicationStatus.values());
+    }
+
+    /**
+     * Adds a compact document dossier to the model for the Overview readiness widget.
+     * Non-critical — failures are swallowed so the rest of the detail page still renders.
+     */
+    private void addDocumentReadiness(Model model, UUID studentId) {
+        try {
+            model.addAttribute("dossier", documentService.getDossier(studentId));
+        } catch (Exception ex) {
+            log.warn("Could not load dossier for student {} — readiness widget will be hidden", studentId);
         }
     }
 

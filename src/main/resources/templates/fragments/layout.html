@@ -51,7 +51,12 @@
 
             <div class="sidebar__section-label">Operations</div>
 
-            <a class="nav-link" th:classappend="${activeNav == 'applications'} ? 'is-active'" href="#">
+            <a class="nav-link" th:classappend="${activeNav == 'universities'} ? 'is-active'" th:href="@{/universities}">
+                <i data-lucide="building"></i>
+                <span>Universities</span>
+            </a>
+
+            <a class="nav-link" th:classappend="${activeNav == 'applications'} ? 'is-active'" th:href="@{/applications}">
                 <i data-lucide="file-text"></i>
                 <span>Applications</span>
             </a>
@@ -71,8 +76,8 @@
                 Administration
             </div>
 
-            <a class="nav-link" sec:authorize="hasRole('TENANT_ADMIN')"
-               th:classappend="${activeNav == 'staff'} ? 'is-active'" href="#">
+            <a class="nav-link" sec:authorize="hasAnyRole('TENANT_ADMIN','SUPER_ADMIN')"
+               th:classappend="${activeNav == 'staff'} ? 'is-active'" th:href="@{/staff}">
                 <i data-lucide="user-cog"></i>
                 <span>Staff</span>
             </a>

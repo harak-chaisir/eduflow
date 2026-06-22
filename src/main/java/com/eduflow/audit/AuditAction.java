@@ -18,8 +18,12 @@ public final class AuditAction {
     public static final String TENANT_SETTINGS_UPDATED = "TENANT_SETTINGS_UPDATED";
     public static final String TENANT_ADMIN_INVITED    = "TENANT_ADMIN_INVITED";
 
-    // ── User ──────────────────────────────────────────────────────────────────
+    // ── User / Staff ────────────────────────────────────────────────────────────
     public static final String USER_PASSWORD_RESET     = "USER_PASSWORD_RESET";
+    public static final String STAFF_INVITED           = "STAFF_INVITED";
+    public static final String STAFF_UPDATED           = "STAFF_UPDATED";
+    public static final String STAFF_STATUS_CHANGED    = "STAFF_STATUS_CHANGED";
+    public static final String STAFF_PASSWORD_RESET    = "STAFF_PASSWORD_RESET";
 
     // ── Student ───────────────────────────────────────────────────────────────
     public static final String STUDENT_CREATED        = "STUDENT_CREATED";
@@ -33,6 +37,12 @@ public final class AuditAction {
     public static final String DOCUMENT_VERIFIED      = "DOCUMENT_VERIFIED";
     public static final String DOCUMENT_RESUBMITTED   = "DOCUMENT_RESUBMITTED";
     public static final String DOCUMENT_DELETED       = "DOCUMENT_DELETED";
+
+    // ── University / Course (master data) ───────────────────────────────────────
+    public static final String UNIVERSITY_CREATED     = "UNIVERSITY_CREATED";
+    public static final String UNIVERSITY_UPDATED     = "UNIVERSITY_UPDATED";
+    public static final String COURSE_CREATED         = "COURSE_CREATED";
+    public static final String COURSE_UPDATED         = "COURSE_UPDATED";
 
     // ── Application ───────────────────────────────────────────────────────────
     public static final String APPLICATION_CREATED    = "APPLICATION_CREATED";

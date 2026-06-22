@@ -19,22 +19,10 @@
         <div class="page-head">
             <th:block th:replace="~{fragments/components :: backLink('/students', 'Back to students')}"></th:block>
             <div class="page-head__actions">
-                <a class="btn btn--ghost" th:href="@{/students/{id}/documents(id=${student.id})}">
-                    <i data-lucide="folder"></i><span>Documents</span>
-                </a>
                 <a sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')"
                    class="btn btn--ghost" th:href="@{/students/{id}/edit(id=${student.id})}">
                     <i data-lucide="pencil"></i><span>Edit</span>
                 </a>
-                <form sec:authorize="hasAnyRole('TENANT_ADMIN','SUPER_ADMIN')"
-                      th:action="@{/students/{id}/delete(id=${student.id})}"
-                      method="post" th:if="${student.status.name() != 'INACTIVE'}"
-                      hx-confirm="Deactivate this student? This action can be reversed.">
-                    <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
-                    <button class="btn btn--ghost text-danger" type="submit">
-                        <i data-lucide="user-x"></i><span>Deactivate</span>
-                    </button>
-                </form>
             </div>
         </div>
 
@@ -73,252 +61,520 @@
             </div>
         </div>
 
-        <!-- ── Detail grid ─────────────────────────────────────────────────── -->
-        <div class="detail-grid">
+        <!-- ── Sub-navigation tabs ─────────────────────────────────────────── -->
+        <nav class="subnav" data-tabs role="tablist" aria-label="Student sections">
+            <button class="subnav__tab is-active" type="button" role="tab"
+                    id="tab-overview-btn" aria-controls="tab-overview"
+                    data-tab-target="#tab-overview" data-tab-name="overview"
+                    aria-selected="true">
+                <i data-lucide="user" aria-hidden="true"></i><span>Overview</span>
+            </button>
+            <button class="subnav__tab" type="button" role="tab"
+                    id="tab-applications-btn" aria-controls="tab-applications"
+                    data-tab-target="#tab-applications" data-tab-name="applications"
+                    aria-selected="false">
+                <i data-lucide="file-text" aria-hidden="true"></i><span>Applications</span>
+                <!-- Always rendered (id is the OOB target after a panel swap); hidden when empty. -->
+                <span id="appsTabCount" class="subnav__count"
+                      th:hidden="${studentApplications == null or studentApplications.isEmpty()}"
+                      th:text="${studentApplications != null and !studentApplications.isEmpty() ? studentApplications.size() : 0}">0</span>
+            </button>
+            <button class="subnav__tab" type="button" role="tab"
+                    id="tab-workflow-btn" aria-controls="tab-workflow"
+                    data-tab-target="#tab-workflow" data-tab-name="workflow"
+                    aria-selected="false">
+                <i data-lucide="git-branch" aria-hidden="true"></i><span>Workflow</span>
+            </button>
+            <button class="subnav__tab" type="button" role="tab"
+                    id="tab-documents-btn" aria-controls="tab-documents"
+                    data-tab-target="#tab-documents" data-tab-name="documents"
+                    aria-selected="false"
+                    th:hx-get="@{/students/{id}/documents/embed(id=${student.id})}"
+                    hx-target="#tab-documents" hx-swap="innerHTML" hx-trigger="click once">
+                <i data-lucide="folder" aria-hidden="true"></i><span>Documents</span>
+            </button>
+            <button class="subnav__tab" type="button" role="tab"
+                    id="tab-tasks-btn" aria-controls="tab-tasks"
+                    data-tab-target="#tab-tasks" data-tab-name="tasks"
+                    aria-selected="false"
+                    th:hx-get="@{/students/{id}/tasks/embed(id=${student.id})}"
+                    hx-target="#tab-tasks" hx-swap="innerHTML" hx-trigger="click once">
+                <i data-lucide="check-square" aria-hidden="true"></i><span>Tasks</span>
+                <span id="tasksTabCount" class="subnav__count" hidden>0</span>
+            </button>
+        </nav>
 
-            <div class="stack">
-                <!-- Personal -->
-                <div class="card">
-                    <div class="card__header"><span class="card__title">Personal details</span></div>
-                    <div class="card__body">
-                        <dl class="info-list">
-                            <div class="info-list__row">
-                                <dt>Date of birth</dt>
-                                <dd th:text="${student.dateOfBirth != null ?
-                                        #strings.substring(student.dateOfBirth.toString(), 0, 10) : '—'}">—</dd>
+        <!-- ══ Overview panel ═══════════════════════════════════════════════ -->
+        <section id="tab-overview" class="tab-panel" role="tabpanel" aria-labelledby="tab-overview-btn">
+            <div class="detail-grid">
+
+                <div class="stack">
+                    <!-- Personal -->
+                    <div class="card">
+                        <div class="card__header"><span class="card__title">Personal details</span></div>
+                        <div class="card__body">
+                            <dl class="info-list">
+                                <div class="info-list__row">
+                                    <dt>Date of birth</dt>
+                                    <dd th:text="${student.dateOfBirth != null ?
+                                            #temporals.format(student.dateOfBirth, 'yyyy-MM-dd') : '—'}">—</dd>
+                                </div>
+                                <div class="info-list__row">
+                                    <dt>Gender</dt>
+                                    <dd th:text="${student.gender != null ? student.gender : '—'}">—</dd>
+                                </div>
+                                <div class="info-list__row">
+                                    <dt>Nationality</dt>
+                                    <dd th:text="${student.nationality != null ? student.nationality : '—'}">—</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    <div class="card">
+                        <div class="card__header"><span class="card__title">Address</span></div>
+                        <div class="card__body">
+                            <dl class="info-list">
+                                <div class="info-list__row">
+                                    <dt>Street</dt>
+                                    <dd>
+                                        <span th:text="${student.addressLine1 != null ? student.addressLine1 : '—'}">—</span>
+                                        <div class="table__sub" th:if="${student.addressLine2}"
+                                             th:text="${student.addressLine2}"></div>
+                                    </dd>
+                                </div>
+                                <div class="info-list__row">
+                                    <dt>City</dt>
+                                    <dd th:text="${student.city != null ? student.city : '—'}">—</dd>
+                                </div>
+                                <div class="info-list__row">
+                                    <dt>State / province</dt>
+                                    <dd th:text="${student.stateProvince != null ? student.stateProvince : '—'}">—</dd>
+                                </div>
+                                <div class="info-list__row">
+                                    <dt>Country</dt>
+                                    <dd th:text="${student.country != null ? student.country : '—'}">—</dd>
+                                </div>
+                                <div class="info-list__row">
+                                    <dt>Postal code</dt>
+                                    <dd th:text="${student.postalCode != null ? student.postalCode : '—'}">—</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <!-- Academic interests -->
+                    <div class="card">
+                        <div class="card__header"><span class="card__title">Academic interests</span></div>
+                        <div class="card__body stack">
+                            <div>
+                                <div class="eyebrow eyebrow--spaced">Countries of interest</div>
+                                <div class="tag-row"
+                                     th:if="${student.interestedCountries != null and !student.interestedCountries.isEmpty()}">
+                                    <span class="tag" th:each="c : ${student.interestedCountries}" th:text="${c}">UK</span>
+                                </div>
+                                <p class="table__sub"
+                                   th:unless="${student.interestedCountries != null and !student.interestedCountries.isEmpty()}">—</p>
                             </div>
-                            <div class="info-list__row">
-                                <dt>Gender</dt>
-                                <dd th:text="${student.gender != null ? student.gender : '—'}">—</dd>
+                            <div>
+                                <div class="eyebrow eyebrow--spaced">Courses / fields of study</div>
+                                <div class="tag-row"
+                                     th:if="${student.interestedCourses != null and !student.interestedCourses.isEmpty()}">
+                                    <span class="tag" th:each="c : ${student.interestedCourses}" th:text="${c}">CS</span>
+                                </div>
+                                <p class="table__sub"
+                                   th:unless="${student.interestedCourses != null and !student.interestedCourses.isEmpty()}">—</p>
                             </div>
-                            <div class="info-list__row">
-                                <dt>Nationality</dt>
-                                <dd th:text="${student.nationality != null ? student.nationality : '—'}">—</dd>
-                            </div>
-                        </dl>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Address -->
-                <div class="card">
-                    <div class="card__header"><span class="card__title">Address</span></div>
-                    <div class="card__body">
+                <!-- Sidebar column -->
+                <div class="stack">
+                    <!-- Record info -->
+                    <div class="card">
+                        <div class="card__header"><span class="card__title">Record info</span></div>
+                        <div class="card__body">
+                            <dl class="info-list">
+                                <div class="info-list__row">
+                                    <dt>Student ID</dt>
+                                    <dd class="is-mono record-id" th:text="${student.id}">—</dd>
+                                </div>
+                                <div class="info-list__row">
+                                    <dt>Registered</dt>
+                                    <dd th:text="${student.createdAt != null ?
+                                            #temporals.format(student.createdAt, 'yyyy-MM-dd') : '—'}">—</dd>
+                                </div>
+                                <div class="info-list__row">
+                                    <dt>Registered by</dt>
+                                    <dd th:text="${student.createdBy != null ? student.createdBy : '—'}">—</dd>
+                                </div>
+                                <div class="info-list__row">
+                                    <dt>Last updated</dt>
+                                    <dd th:text="${student.updatedAt != null ?
+                                            #temporals.format(student.updatedAt, 'yyyy-MM-dd') : '—'}">—</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <!-- Document readiness (compact widget, powered by DossierView) -->
+                    <div class="card" th:if="${dossier != null}">
+                        <div class="card__header">
+                            <span class="card__title">Document readiness</span>
+                            <a class="inline-link eyebrow"
+                               th:href="@{/students/{id}/documents(id=${student.id})}"
+                               title="Open full document dossier">
+                                <i data-lucide="external-link" class="icon-sm" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="card__body stack">
+                            <div class="readiness"
+                                 th:classappend="${dossier.readiness.complete()} ? 'readiness--complete'"
+                                 role="meter"
+                                 th:attr="aria-valuenow=${dossier.readiness.percent},
+                                          aria-valuemin=0,
+                                          aria-valuemax=100,
+                                          aria-label='Dossier readiness: ' + ${dossier.readiness.percent} + '%'">
+                                <div class="readiness__ring" th:style="'--pct:' + ${dossier.readiness.percent}">
+                                    <span class="readiness__value"
+                                          th:text="${dossier.readiness.percent} + '%'"
+                                          aria-hidden="true">0%</span>
+                                </div>
+                                <div class="readiness__caption">
+                                    <strong>Required docs</strong>
+                                    <span th:text="${dossier.readiness.requiredApproved} + ' / '
+                                          + ${dossier.readiness.requiredTotal} + ' approved'">0 / 4</span>
+                                </div>
+                            </div>
+                            <div class="status-summary">
+                                <span class="status-tally">
+                                    <strong th:text="${dossier.statusTally.get(T(com.eduflow.document.DocumentStatus).APPROVED)}">0</strong> Approved
+                                </span>
+                                <span class="status-tally">
+                                    <strong th:text="${dossier.statusTally.get(T(com.eduflow.document.DocumentStatus).PENDING)}">0</strong> Pending
+                                </span>
+                                <span class="status-tally"
+                                      th:if="${dossier.statusTally.get(T(com.eduflow.document.DocumentStatus).NEEDS_REVISION) > 0}">
+                                    <strong th:text="${dossier.statusTally.get(T(com.eduflow.document.DocumentStatus).NEEDS_REVISION)}">0</strong>
+                                    <span style="color:var(--status-revision-fg)">Needs revision</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--
+                        Status transitions card.
+                        Single fragment — internal conditionals cover active vs. inactive states.
+                        On HTMX status POST the server swaps just this element (outerHTML) and
+                        sends the profile stamp as an OOB update.
+                    -->
+                    <div id="statusCard"
+                         th:fragment="statusCard"
+                         class="card">
+
+                        <!--
+                            OOB: when this card is swapped in via HTMX after a status change,
+                            simultaneously update the profile-header badge so it stays in sync
+                            without a full page reload. HTMX extracts this element from the
+                            response and teleports it to #profileStatusStamp in the DOM.
+                        -->
+                        <span id="profileStatusStamp" hx-swap-oob="true"
+                              class="stamp"
+                              th:attr="data-status=${student.status.name()}"
+                              th:text="${student.status}"></span>
+
+                        <!-- Active / progressable state -->
+                        <th:block sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')"
+                                  th:unless="${student.status.name() == 'INACTIVE'}">
+                            <div class="card__header"><span class="card__title">Progress student</span></div>
+                            <div class="card__body stack">
+                                <p class="table__sub is-flush">
+                                    Current status: <strong th:text="${student.status}">LEAD</strong>. Advance to the next
+                                    stage of the enrollment pipeline.
+                                </p>
+
+                                <!-- One reusable form per pipeline transition (see components :: statusAdvanceForm). -->
+                                <th:block th:if="${student.status.name() == 'LEAD'}"
+                                          th:replace="~{fragments/components :: statusAdvanceForm(${student.id}, 'QUALIFIED', 'Mark as qualified', 'check', 'btn--primary', null)}"></th:block>
+                                <th:block th:if="${student.status.name() == 'QUALIFIED'}"
+                                          th:replace="~{fragments/components :: statusAdvanceForm(${student.id}, 'ACTIVE', 'Mark as active', 'check', 'btn--primary', null)}"></th:block>
+                                <th:block th:if="${student.status.name() == 'ACTIVE'}"
+                                          th:replace="~{fragments/components :: statusAdvanceForm(${student.id}, 'ENROLLED', 'Mark as enrolled', 'graduation-cap', 'btn--primary', null)}"></th:block>
+                                <th:block th:replace="~{fragments/components :: statusAdvanceForm(${student.id}, 'INACTIVE', 'Deactivate', 'user-x', 'btn--ghost text-danger', 'Deactivate this student?')}"></th:block>
+                            </div>
+                        </th:block>
+
+                        <!-- Inactive state -->
+                        <th:block th:if="${student.status.name() == 'INACTIVE'}">
+                            <div class="card__body">
+                                <div class="status-note">
+                                    <i data-lucide="info"></i>
+                                    <p>
+                                        This student is currently <strong>inactive</strong>. Status transitions are unavailable.
+                                    </p>
+                                </div>
+                            </div>
+                        </th:block>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ══ Applications panel ═══════════════════════════════════════════ -->
+        <section id="tab-applications" class="tab-panel" role="tabpanel" aria-labelledby="tab-applications-btn" hidden>
+            <!-- ── Applications panel (PRD: Applications module) ───────────── -->
+            <div id="applicationsPanel" th:fragment="applicationsPanel" class="card">
+                <!-- Flash toasts only when this panel is swapped in standalone over HTMX;
+                     on a full page load the layout-level markers cover them (avoids duplicates). -->
+                <th:block th:if="${isPanelFragment}"
+                          th:replace="~{fragments/components :: toastMarkers(${successMessage}, ${errorMessage})}"></th:block>
+                <!-- OOB: keep the Applications tab count in sync after a panel swap. -->
+                <span id="appsTabCount" hx-swap-oob="true" class="subnav__count"
+                      th:if="${isPanelFragment}"
+                      th:hidden="${studentApplications == null or studentApplications.isEmpty()}"
+                      th:text="${studentApplications != null and !studentApplications.isEmpty() ? studentApplications.size() : 0}">0</span>
+                <div class="card__header">
+                    <span class="card__title">Applications</span>
+                    <button sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')"
+                            type="button" class="btn btn--primary"
+                            data-drawer-open="#applyDrawer">
+                        <i data-lucide="send"></i><span>Apply to course</span>
+                    </button>
+                </div>
+
+                <div class="card__body stack">
+
+                    <!-- Existing applications -->
+                    <p class="table__sub is-flush"
+                       th:if="${studentApplications == null or studentApplications.isEmpty()}">
+                        No applications yet. Use <strong>Apply to course</strong> at the top right to submit one.
+                    </p>
+
+                    <div class="table-wrap" th:unless="${studentApplications == null or studentApplications.isEmpty()}">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>University</th>
+                                    <th>Status</th>
+                                    <th sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')">Change status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="a : ${studentApplications}">
+                                    <td>
+                                        <span class="table__name" th:text="${a.courseName}">Course</span>
+                                        <div class="table__sub" th:text="${a.courseLevel}">LEVEL</div>
+                                    </td>
+                                    <td><span class="table__sub" th:text="${a.universityName}">University</span></td>
+                                    <td>
+                                        <th:block th:replace="~{fragments/components :: statusStamp(${a.status}, ${a.status})}"></th:block>
+                                    </td>
+                                    <td sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')">
+                                        <form th:action="@{/applications/{id}/status(id=${a.id})}" method="post"
+                                              th:hx-post="@{/applications/{id}/status(id=${a.id})}"
+                                              hx-target="#applicationsPanel" hx-swap="outerHTML"
+                                              class="inline-form">
+                                            <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                                            <input type="hidden" name="studentId" th:value="${panelStudentId}" />
+                                            <select class="select select--sm" name="newStatus">
+                                                <option th:each="s : ${applicationStatuses}" th:value="${s.name()}"
+                                                        th:text="${s}" th:selected="${s == a.status}"></option>
+                                            </select>
+                                            <button class="btn btn--ghost btn--sm" type="submit">
+                                                <i data-lucide="arrow-right" class="icon-sm"></i><span>Move</span>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══ Workflow panel ═══════════════════════════════════════════════ -->
+        <section id="tab-workflow" class="tab-panel" role="tabpanel" aria-labelledby="tab-workflow-btn" hidden>
+            <!-- ── Workflow card (PRD §14) ─────────────────────────────────── -->
+            <div id="workflowCard"
+                 th:fragment="workflowCard"
+                 class="card">
+
+                <!-- Flash toasts for HTMX partial refreshes of this card -->
+                <th:block th:replace="~{fragments/components :: toastMarkers(${successMessage}, ${errorMessage})}"></th:block>
+
+                <div class="card__header"><span class="card__title">Workflow</span></div>
+                <div class="card__body stack">
+
+                    <!-- Active instance: show stage + SLA + advance controls -->
+                    <th:block th:if="${studentWorkflow != null}">
                         <dl class="info-list">
                             <div class="info-list__row">
-                                <dt>Street</dt>
+                                <dt>Workflow</dt>
+                                <dd th:text="${studentWorkflow.templateName}">Australia</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>Current stage</dt>
                                 <dd>
-                                    <span th:text="${student.addressLine1 != null ? student.addressLine1 : '—'}">—</span>
-                                    <div class="table__sub" th:if="${student.addressLine2}"
-                                         th:text="${student.addressLine2}"></div>
+                                    <span class="stamp"
+                                          th:style="${studentWorkflow.currentStageColor != null}
+                                                    ? 'background:' + ${studentWorkflow.currentStageColor} + ';color:#fff' : null"
+                                          th:text="${studentWorkflow.currentStageName != null ? studentWorkflow.currentStageName : '—'}">Stage</span>
                                 </dd>
                             </div>
                             <div class="info-list__row">
-                                <dt>City</dt>
-                                <dd th:text="${student.city != null ? student.city : '—'}">—</dd>
+                                <dt>Days in stage</dt>
+                                <dd>
+                                    <span th:text="${studentWorkflow.daysInStage}">0</span>
+                                    <span th:if="${studentWorkflow.currentStageSlaDays != null}"
+                                          class="table__sub"
+                                          th:text="' / ' + ${studentWorkflow.currentStageSlaDays} + 'd SLA'"> / 7d SLA</span>
+                                    <span th:if="${studentWorkflow.slaBreached}" class="stamp stamp--rejected"
+                                          style="margin-left:.5rem;">SLA breached</span>
+                                </dd>
                             </div>
                             <div class="info-list__row">
-                                <dt>State / province</dt>
-                                <dd th:text="${student.stateProvince != null ? student.stateProvince : '—'}">—</dd>
-                            </div>
-                            <div class="info-list__row">
-                                <dt>Country</dt>
-                                <dd th:text="${student.country != null ? student.country : '—'}">—</dd>
-                            </div>
-                            <div class="info-list__row">
-                                <dt>Postal code</dt>
-                                <dd th:text="${student.postalCode != null ? student.postalCode : '—'}">—</dd>
+                                <dt>Status</dt>
+                                <dd th:text="${studentWorkflow.status}">ACTIVE</dd>
                             </div>
                         </dl>
-                    </div>
-                </div>
 
-                <!-- Academic interests -->
-                <div class="card">
-                    <div class="card__header"><span class="card__title">Academic interests</span></div>
-                    <div class="card__body stack">
-                        <div>
-                            <div class="eyebrow eyebrow--spaced">Countries of interest</div>
-                            <div class="tag-row"
-                                 th:if="${student.interestedCountries != null and !student.interestedCountries.isEmpty()}">
-                                <span class="tag" th:each="c : ${student.interestedCountries}" th:text="${c}">UK</span>
-                            </div>
-                            <p class="table__sub"
-                               th:unless="${student.interestedCountries != null and !student.interestedCountries.isEmpty()}">
-                                None specified</p>
-                        </div>
-                        <div>
-                            <div class="eyebrow eyebrow--spaced">Courses / fields of study</div>
-                            <div class="tag-row"
-                                 th:if="${student.interestedCourses != null and !student.interestedCourses.isEmpty()}">
-                                <span class="tag" th:each="c : ${student.interestedCourses}" th:text="${c}">CS</span>
-                            </div>
-                            <p class="table__sub"
-                               th:unless="${student.interestedCourses != null and !student.interestedCourses.isEmpty()}">
-                                None specified</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sidebar column -->
-            <div class="stack">
-                <!-- Record info -->
-                <div class="card">
-                    <div class="card__header"><span class="card__title">Record info</span></div>
-                    <div class="card__body">
-                        <dl class="info-list">
-                            <div class="info-list__row">
-                                <dt>Student ID</dt>
-                                <dd class="is-mono record-id" th:text="${student.id}">—</dd>
-                            </div>
-                            <div class="info-list__row">
-                                <dt>Registered</dt>
-                                <dd th:text="${student.createdAt != null ?
-                                        #strings.substring(student.createdAt.toString(), 0, 10) : '—'}">—</dd>
-                            </div>
-                            <div class="info-list__row">
-                                <dt>Registered by</dt>
-                                <dd th:text="${student.createdBy != null ? student.createdBy : '—'}">—</dd>
-                            </div>
-                            <div class="info-list__row">
-                                <dt>Last updated</dt>
-                                <dd th:text="${student.updatedAt != null ?
-                                        #strings.substring(student.updatedAt.toString(), 0, 10) : '—'}">—</dd>
-                            </div>
-                        </dl>
-                    </div>
-                </div>
-
-                <!-- ── Workflow card (PRD §14) ─────────────────────────────── -->
-                <div class="card">
-                    <div class="card__header"><span class="card__title">Workflow</span></div>
-                    <div class="card__body stack">
-
-                        <!-- Active instance: show stage + SLA + advance controls -->
-                        <th:block th:if="${studentWorkflow != null}">
-                            <dl class="info-list">
-                                <div class="info-list__row">
-                                    <dt>Workflow</dt>
-                                    <dd th:text="${studentWorkflow.templateName}">Australia</dd>
-                                </div>
-                                <div class="info-list__row">
-                                    <dt>Current stage</dt>
-                                    <dd>
-                                        <span class="stamp"
-                                              th:style="${studentWorkflow.currentStageColor != null}
-                                                        ? 'background:' + ${studentWorkflow.currentStageColor} + ';color:#fff' : null"
-                                              th:text="${studentWorkflow.currentStageName != null ? studentWorkflow.currentStageName : '—'}">Stage</span>
-                                    </dd>
-                                </div>
-                                <div class="info-list__row">
-                                    <dt>Days in stage</dt>
-                                    <dd>
-                                        <span th:text="${studentWorkflow.daysInStage}">0</span>
-                                        <span th:if="${studentWorkflow.currentStageSlaDays != null}"
-                                              class="table__sub"
-                                              th:text="' / ' + ${studentWorkflow.currentStageSlaDays} + 'd SLA'"> / 7d SLA</span>
-                                        <span th:if="${studentWorkflow.slaBreached}" class="stamp stamp--rejected"
-                                              style="margin-left:.5rem;">SLA breached</span>
-                                    </dd>
-                                </div>
-                                <div class="info-list__row">
-                                    <dt>Status</dt>
-                                    <dd th:text="${studentWorkflow.status}">ACTIVE</dd>
-                                </div>
-                            </dl>
-
-                            <!-- Advance controls -->
-                            <th:block th:if="${studentWorkflow.status.name() == 'ACTIVE'}"
-                                      sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN','DOC_OFFICER','VISA_OFFICER')">
-                                <p class="table__sub is-flush" th:if="${studentWorkflow.availableTransitions.isEmpty()}">
-                                    No onward transitions from this stage.
-                                </p>
-                                <form th:each="tr : ${studentWorkflow.availableTransitions}"
-                                      th:action="@{/students/{id}/workflow/{wid}/move(id=${student.id},wid=${studentWorkflow.id})}"
-                                      method="post">
-                                    <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
-                                    <input type="hidden" name="toStageId" th:value="${tr.toStageId}" />
-                                    <button type="submit" class="btn btn--primary btn--full">
-                                        <i data-lucide="arrow-right"></i>
-                                        <span th:text="'Move to ' + ${tr.toStageName}">Move</span>
-                                    </button>
-                                </form>
-                            </th:block>
-                        </th:block>
-
-                        <!-- No active instance: offer assignment -->
-                        <th:block th:if="${studentWorkflow == null}">
-                            <th:block th:if="${assignableWorkflows == null or assignableWorkflows.isEmpty()}">
-                                <p class="table__sub is-flush">No workflows are available. Create one under
-                                    <a href="/workflows">Workflows</a>.</p>
-                            </th:block>
-                            <form th:if="${assignableWorkflows != null and !assignableWorkflows.isEmpty()}"
-                                  sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')"
-                                  th:action="@{/students/{id}/workflow/assign(id=${student.id})}" method="post"
+                        <!-- Advance controls -->
+                        <th:block th:if="${studentWorkflow.status.name() == 'ACTIVE'}"
+                                  sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN','DOC_OFFICER','VISA_OFFICER')">
+                            <p class="table__sub is-flush" th:if="${studentWorkflow.availableTransitions.isEmpty()}">
+                                No onward transitions from this stage.
+                            </p>
+                            <form th:each="tr : ${studentWorkflow.availableTransitions}"
+                                  th:action="@{/students/{id}/workflow/{wid}/move(id=${student.id},wid=${studentWorkflow.id})}"
+                                  method="post"
+                                  th:hx-post="@{/students/{id}/workflow/{wid}/move(id=${student.id},wid=${studentWorkflow.id})}"
+                                  hx-target="#workflowCard" hx-swap="outerHTML"
                                   class="stack">
                                 <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                                <input type="hidden" name="toStageId" th:value="${tr.toStageId}" />
                                 <div class="field">
-                                    <label class="label" for="assignTemplate">Assign a workflow</label>
-                                    <select class="select" id="assignTemplate" name="templateId" required>
-                                        <option th:each="wf : ${assignableWorkflows}" th:value="${wf.id}"
-                                                th:text="${wf.name} + ' (v' + ${wf.version} + ')'">Workflow</option>
-                                    </select>
+                                    <label class="field__label"
+                                           th:for="'notes-' + ${tr.toStageId}">
+                                        Notes <span class="field__hint">(optional)</span>
+                                    </label>
+                                    <input class="input" type="text" name="notes"
+                                           th:id="'notes-' + ${tr.toStageId}"
+                                           maxlength="500"
+                                           th:placeholder="'Note for moving to ' + ${tr.toStageName} + '…'" />
                                 </div>
                                 <button type="submit" class="btn btn--primary btn--full">
-                                    <i data-lucide="git-branch-plus"></i><span>Assign workflow</span>
+                                    <i data-lucide="arrow-right"></i>
+                                    <span th:text="'Move to ' + ${tr.toStageName}">Move</span>
                                 </button>
                             </form>
                         </th:block>
-                    </div>
-                </div>
-
-                <!--
-                    Status transitions card.
-                    Single fragment — internal conditionals cover active vs. inactive states.
-                    On HTMX status POST the server swaps just this element (outerHTML) and
-                    sends the profile stamp as an OOB update.
-                -->
-                <div id="statusCard"
-                     th:fragment="statusCard"
-                     class="card">
-
-                    <!-- Active / progressable state -->
-                    <th:block sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')"
-                              th:unless="${student.status.name() == 'INACTIVE'}">
-                        <div class="card__header"><span class="card__title">Progress student</span></div>
-                        <div class="card__body stack">
-                            <p class="table__sub is-flush">
-                                Current status: <strong th:text="${student.status}">LEAD</strong>. Advance to the next
-                                stage of the enrollment pipeline.
-                            </p>
-
-                            <!-- One reusable form per pipeline transition (see components :: statusAdvanceForm). -->
-                            <th:block th:if="${student.status.name() == 'LEAD'}"
-                                      th:replace="~{fragments/components :: statusAdvanceForm(${student.id}, 'QUALIFIED', 'Mark as qualified', 'check', 'btn--primary', null)}"></th:block>
-                            <th:block th:if="${student.status.name() == 'QUALIFIED'}"
-                                      th:replace="~{fragments/components :: statusAdvanceForm(${student.id}, 'ACTIVE', 'Mark as active', 'check', 'btn--primary', null)}"></th:block>
-                            <th:block th:if="${student.status.name() == 'ACTIVE'}"
-                                      th:replace="~{fragments/components :: statusAdvanceForm(${student.id}, 'ENROLLED', 'Mark as enrolled', 'graduation-cap', 'btn--primary', null)}"></th:block>
-                            <th:block th:replace="~{fragments/components :: statusAdvanceForm(${student.id}, 'INACTIVE', 'Deactivate', 'user-x', 'btn--ghost text-danger', 'Deactivate this student?')}"></th:block>
-                        </div>
                     </th:block>
 
-                    <!-- Inactive state -->
-                    <th:block th:if="${student.status.name() == 'INACTIVE'}">
-                        <div class="card__body">
-                            <div class="status-note">
-                                <i data-lucide="info"></i>
-                                <p>
-                                    This student is currently <strong>inactive</strong>. Status transitions are unavailable.
-                                </p>
+                    <!-- No active instance: offer assignment -->
+                    <th:block th:if="${studentWorkflow == null}">
+                        <th:block th:if="${assignableWorkflows == null or assignableWorkflows.isEmpty()}">
+                            <p class="table__sub is-flush">No workflows are available. Create one under
+                                <a th:href="@{/workflows}">Workflows</a>.</p>
+                        </th:block>
+                        <form th:if="${assignableWorkflows != null and !assignableWorkflows.isEmpty()}"
+                              sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')"
+                              th:action="@{/students/{id}/workflow/assign(id=${student.id})}" method="post"
+                              th:hx-post="@{/students/{id}/workflow/assign(id=${student.id})}"
+                              hx-target="#workflowCard" hx-swap="outerHTML"
+                              class="stack">
+                            <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                            <div class="field">
+                                <label class="label" for="assignTemplate">Assign a workflow</label>
+                                <select class="select" id="assignTemplate" name="templateId" required>
+                                    <option th:each="wf : ${assignableWorkflows}" th:value="${wf.id}"
+                                            th:text="${wf.name} + ' (v' + ${wf.version} + ')'">Workflow</option>
+                                </select>
                             </div>
-                        </div>
+                            <button type="submit" class="btn btn--primary btn--full">
+                                <i data-lucide="git-branch-plus"></i><span>Assign workflow</span>
+                            </button>
+                        </form>
                     </th:block>
-
                 </div>
             </div>
+        </section>
 
-        </div>
+        <!-- ══ Documents panel (lazy-loaded over HTMX on first open) ════════ -->
+        <section id="tab-documents" class="tab-panel" role="tabpanel" aria-labelledby="tab-documents-btn" hidden>
+            <div class="tab-loading">
+                <i data-lucide="loader-circle" aria-hidden="true"></i><span>Loading documents…</span>
+            </div>
+        </section>
+
+        <!-- ══ Tasks panel (lazy-loaded over HTMX on first open) ════════════ -->
+        <section id="tab-tasks" class="tab-panel" role="tabpanel" aria-labelledby="tab-tasks-btn" hidden>
+            <div class="tab-loading">
+                <i data-lucide="loader-circle" aria-hidden="true"></i><span>Loading tasks…</span>
+            </div>
+        </section>
+
+    </div>
+
+    <!--
+        ══ Apply-to-course drawer (right-side slide-over) ════════════════════
+        Opened by the "Apply to course" button in the page head (data-drawer-open).
+        The form posts over HTMX and swaps the applicationsPanel underneath; on a
+        successful swap eduflow.js closes this drawer and reveals the Applications tab.
+    -->
+    <div class="drawer-backdrop" id="applyDrawer" data-drawer aria-hidden="true"
+         sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')">
+        <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="applyDrawerTitle">
+            <div class="drawer__header">
+                <div>
+                    <h2 class="drawer__title" id="applyDrawerTitle">Apply to course</h2>
+                    <p class="drawer__subtitle">
+                        Submit an application for <span th:text="${student.fullName}">Student</span>.
+                    </p>
+                </div>
+                <button class="drawer__close" type="button" data-drawer-close aria-label="Close panel">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="drawer__body">
+                <form th:action="@{/students/{id}/applications(id=${panelStudentId})}" method="post"
+                      th:hx-post="@{/students/{id}/applications(id=${panelStudentId})}"
+                      hx-target="#applicationsPanel" hx-swap="outerHTML"
+                      class="stack">
+                    <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+                    <div th:if="${applicableCourses == null or applicableCourses.isEmpty()}">
+                        <p class="table__sub is-flush">No active courses available. Add courses under
+                            <a th:href="@{/universities}">Universities</a>.</p>
+                    </div>
+                    <th:block th:unless="${applicableCourses == null or applicableCourses.isEmpty()}">
+                        <div class="field">
+                            <label class="field__label" for="applyCourse">Course</label>
+                            <select class="select" id="applyCourse" name="courseId" required>
+                                <option value="">Select a course…</option>
+                                <option th:each="c : ${applicableCourses}" th:value="${c.id}"
+                                        th:text="${c.universityName + ' — ' + c.name + ' (' + c.level + ')'}">Course</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="applyNotes">Notes</label>
+                            <input class="input" type="text" id="applyNotes" name="notes" maxlength="1000"
+                                   placeholder="Optional notes for this application" />
+                        </div>
+                        <div class="drawer__footer">
+                            <button class="btn btn--ghost" type="button" data-drawer-close>Cancel</button>
+                            <button class="btn btn--primary" type="submit">
+                                <i data-lucide="send"></i><span>Apply to course</span>
+                            </button>
+                        </div>
+                    </th:block>
+                </form>
+            </div>
+        </aside>
     </div>
 
 </th:block>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<!--
+    University create / edit form.
+    Active nav: 'universities'
+-->
+<html th:replace="~{fragments/layout :: layout(${isEdit} ? ('Edit — ' + universityName) : 'Add University',
+                                               ${isEdit} ? ('Universities / Edit / ' + universityName) : 'Universities / Add',
+                                               'universities', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack form-shell">
+
+        <a th:href="${isEdit} ? @{/universities/{id}(id=${universityId})} : @{/universities}"
+           class="eyebrow inline-link">
+            <i data-lucide="arrow-left" class="icon-sm"></i>
+            <span th:text="${isEdit} ? 'Back to university' : 'Back to universities'">Back</span>
+        </a>
+
+        <div class="page-head">
+            <div>
+                <h1 class="page-head__title"
+                    th:text="${isEdit} ? ('Edit ' + universityName) : 'Add new university'">University form</h1>
+                <p class="page-head__sub"
+                   th:text="${isEdit} ? 'Update the university details below.' :
+                                        'Add a university to your tenant catalog.'">Subtitle</p>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/components :: toastMarkers(null, ${errorMessage})}"></th:block>
+
+        <form th:action="${isEdit} ? @{/universities/{id}/edit(id=${universityId})} : @{/universities/new}"
+              th:object="${universityForm}"
+              method="post"
+              novalidate>
+
+            <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+
+            <div th:if="${#fields.hasErrors('*')}" class="flash flash--error validation-summary">
+                <i data-lucide="alert-triangle"></i>
+                <span>Please correct the highlighted fields and try again.</span>
+            </div>
+
+            <div class="card">
+                <div class="form-section">
+                    <div class="form-section__title">University details</div>
+                    <p class="form-section__hint">Master-data record that courses and applications reference.</p>
+
+                    <div class="form-grid">
+                        <th:block th:replace="~{fragments/forms :: field(field='name', label='Name', required=true, maxlength=255, placeholder='e.g. University of Melbourne', span=true)}"></th:block>
+                        <th:block th:replace="~{fragments/forms :: field(field='country', label='Country', required=true, maxlength=100, placeholder='e.g. Australia')}"></th:block>
+                        <th:block th:replace="~{fragments/forms :: field(field='city', label='City', maxlength=100, placeholder='e.g. Melbourne')}"></th:block>
+                        <th:block th:replace="~{fragments/forms :: field(field='website', label='Website', maxlength=255, placeholder='e.g. https://unimelb.edu.au')}"></th:block>
+                        <th:block th:replace="~{fragments/forms :: field(field='code', label='Code', maxlength=50, placeholder='Internal shorthand (optional)')}"></th:block>
+                    </div>
+
+                    <div class="field field--span2" th:if="${isEdit}">
+                        <label class="check">
+                            <input type="checkbox" th:field="*{active}" />
+                            <span>Active — available for new courses and applications</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a class="btn btn--ghost"
+                       th:href="${isEdit} ? @{/universities/{id}(id=${universityId})} : @{/universities}">Cancel</a>
+                    <button class="btn btn--primary" type="submit">
+                        <i data-lucide="check"></i>
+                        <span th:text="${isEdit} ? 'Save changes' : 'Add university'">Save</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+</th:block>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<!--
+    University detail page: profile header + sub-navigation tabs (Courses / About).
+    Active nav: 'universities'
+-->
+<html th:replace="~{fragments/layout :: layout(${university.name}, 'Universities / ' + ${university.name}, 'universities', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack">
+
+        <th:block th:replace="~{fragments/components :: toastMarkers(${successMessage}, ${errorMessage})}"></th:block>
+
+        <div class="page-head">
+            <th:block th:replace="~{fragments/components :: backLink('/universities', 'Back to universities')}"></th:block>
+            <div class="page-head__actions">
+                <a sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')"
+                   class="btn btn--ghost" th:href="@{/universities/{id}/edit(id=${university.id})}">
+                    <i data-lucide="pencil"></i><span>Edit</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Header card -->
+        <div class="card">
+            <div class="card__body">
+                <div class="profile-head">
+                    <th:block th:replace="~{fragments/components :: avatar(${university.name}, 'avatar--lg')}"></th:block>
+                    <div class="profile-head__meta">
+                        <div class="profile-title-row">
+                            <h1 class="profile-head__name" th:text="${university.name}">University</h1>
+                            <span class="stamp" th:attr="data-status=${university.active ? 'ACTIVE' : 'INACTIVE'}"
+                                  th:text="${university.active ? 'Active' : 'Inactive'}">Active</span>
+                        </div>
+                        <div class="profile-contact">
+                            <span><i data-lucide="map-pin" class="icon-sm"></i><span
+                                    th:text="${university.city != null ? (university.city + ', ' + university.country) : university.country}">Location</span></span>
+                            <span th:if="${university.website}">
+                                <i data-lucide="globe" class="icon-sm"></i>
+                                <a th:href="${university.website}" target="_blank" rel="noopener"
+                                   th:text="${university.website}">website</a>
+                            </span>
+                            <span th:if="${university.code}">
+                                <i data-lucide="hash" class="icon-sm"></i><span th:text="${university.code}">CODE</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Sub-navigation tabs ─────────────────────────────────────────── -->
+        <nav class="subnav" data-tabs aria-label="University sections">
+            <button class="subnav__tab is-active" type="button" role="tab"
+                    data-tab-target="#tab-courses" data-tab-name="courses">
+                <i data-lucide="book-open"></i><span>Courses</span>
+                <span class="subnav__count"
+                      th:if="${courses != null and !courses.isEmpty()}"
+                      th:text="${courses.size()}">0</span>
+            </button>
+            <button class="subnav__tab" type="button" role="tab"
+                    data-tab-target="#tab-about" data-tab-name="about">
+                <i data-lucide="info"></i><span>About</span>
+            </button>
+        </nav>
+
+        <!-- ══ Courses panel ════════════════════════════════════════════════ -->
+        <section id="tab-courses" class="tab-panel">
+            <div class="stack">
+                <!-- ── Courses ─────────────────────────────────────────────── -->
+                <div class="card">
+                    <div class="card__header">
+                        <span class="card__title">Courses</span>
+                    </div>
+                    <div class="card__body">
+                        <div th:if="${courses == null or courses.isEmpty()}" class="empty">
+                            <p class="table__sub is-flush">No courses yet for this university.</p>
+                        </div>
+
+                        <div class="table-wrap" th:unless="${courses == null or courses.isEmpty()}">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Course</th>
+                                        <th>Level</th>
+                                        <th>Intake</th>
+                                        <th>Tuition</th>
+                                        <th>Status</th>
+                                        <th class="cell-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="c : ${courses}">
+                                        <td>
+                                            <span class="table__name" th:text="${c.name}">Course</span>
+                                            <div class="table__sub" th:if="${c.entryRequirements}"
+                                                 th:text="${c.entryRequirements}">Entry</div>
+                                        </td>
+                                        <td><span class="stamp" th:attr="data-status=${c.level.name()}" th:text="${c.level}">LEVEL</span></td>
+                                        <td>
+                                            <span class="table__sub"
+                                                  th:text="${(c.intakeMonth != null ? c.intakeMonth : '—') + (c.intakeYear != null ? ' / ' + c.intakeYear : '')}">—</span>
+                                        </td>
+                                        <td>
+                                            <span class="is-mono table__mono"
+                                                  th:text="${c.tuitionFee != null ? c.tuitionFee : '—'}">—</span>
+                                        </td>
+                                        <td>
+                                            <span class="stamp" th:attr="data-status=${c.active ? 'ACTIVE' : 'INACTIVE'}"
+                                                  th:text="${c.active ? 'Active' : 'Inactive'}">Active</span>
+                                        </td>
+                                        <td>
+                                            <div class="table__actions">
+                                                <a sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')"
+                                                   class="icon-btn" th:href="@{/universities/{id}/courses/{cid}/edit(id=${university.id},cid=${c.id})}"
+                                                   title="Edit course" aria-label="Edit course">
+                                                    <i data-lucide="pencil"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Add course ──────────────────────────────────────────── -->
+                <div class="card" sec:authorize="hasAnyRole('COUNSELOR','TENANT_ADMIN','SUPER_ADMIN')">
+                    <div class="card__header"><span class="card__title">Add a course</span></div>
+                    <div class="card__body">
+                        <form th:action="@{/universities/{id}/courses(id=${university.id})}"
+                              th:object="${courseForm}" method="post" novalidate>
+                            <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+
+                            <div th:if="${#fields.hasErrors('*')}" class="flash flash--error validation-summary">
+                                <i data-lucide="alert-triangle"></i>
+                                <span>Please correct the highlighted fields and try again.</span>
+                            </div>
+
+                            <div class="form-grid">
+                                <th:block th:replace="~{fragments/forms :: field(field='name', label='Course name', required=true, maxlength=255, placeholder='e.g. MSc Computer Science', span=true)}"></th:block>
+
+                                <div class="field">
+                                    <label class="field__label" for="level">Level <span class="required-mark">*</span></label>
+                                    <select class="select" id="level" th:field="*{level}"
+                                            th:classappend="${#fields.hasErrors('level')} ? 'is-invalid'">
+                                        <option value="">Select level…</option>
+                                        <option th:each="l : ${levels}" th:value="${l.name()}" th:text="${l}">MASTER</option>
+                                    </select>
+                                    <span class="field__error" th:if="${#fields.hasErrors('level')}" th:errors="*{level}"></span>
+                                </div>
+
+                                <th:block th:replace="~{fragments/forms :: field(field='intakeMonth', label='Intake month (1–12)', type='number')}"></th:block>
+                                <th:block th:replace="~{fragments/forms :: field(field='intakeYear', label='Intake year', type='number')}"></th:block>
+                                <th:block th:replace="~{fragments/forms :: field(field='tuitionFee', label='Tuition fee', type='number')}"></th:block>
+                                <th:block th:replace="~{fragments/forms :: field(field='entryRequirements', label='Entry requirements', maxlength=1000, span=true)}"></th:block>
+                            </div>
+
+                            <div class="form-actions">
+                                <button class="btn btn--primary" type="submit">
+                                    <i data-lucide="plus"></i><span>Add course</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══ About panel ══════════════════════════════════════════════════ -->
+        <section id="tab-about" class="tab-panel" hidden>
+            <div class="detail-grid">
+                <!-- Details -->
+                <div class="card">
+                    <div class="card__header"><span class="card__title">Details</span></div>
+                    <div class="card__body">
+                        <dl class="info-list">
+                            <div class="info-list__row">
+                                <dt>Country</dt>
+                                <dd th:text="${university.country != null ? university.country : '—'}">—</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>City</dt>
+                                <dd th:text="${university.city != null ? university.city : '—'}">—</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>Website</dt>
+                                <dd>
+                                    <a th:if="${university.website}" th:href="${university.website}"
+                                       target="_blank" rel="noopener" th:text="${university.website}">website</a>
+                                    <span th:unless="${university.website}">—</span>
+                                </dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>Code</dt>
+                                <dd class="is-mono" th:text="${university.code != null ? university.code : '—'}">—</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>Status</dt>
+                                <dd>
+                                    <span class="stamp" th:attr="data-status=${university.active ? 'ACTIVE' : 'INACTIVE'}"
+                                          th:text="${university.active ? 'Active' : 'Inactive'}">Active</span>
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Record info -->
+                <div class="card">
+                    <div class="card__header"><span class="card__title">Record info</span></div>
+                    <div class="card__body">
+                        <dl class="info-list">
+                            <div class="info-list__row">
+                                <dt>University ID</dt>
+                                <dd class="is-mono record-id" th:text="${university.id}">—</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>Added</dt>
+                                <dd th:text="${university.createdAt != null ?
+                                        #strings.substring(university.createdAt.toString(), 0, 10) : '—'}">—</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>Added by</dt>
+                                <dd th:text="${university.createdBy != null ? university.createdBy : '—'}">—</dd>
+                            </div>
+                            <div class="info-list__row">
+                                <dt>Last updated</dt>
+                                <dd th:text="${university.updatedAt != null ?
+                                        #strings.substring(university.updatedAt.toString(), 0, 10) : '—'}">—</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+</th:block>
+</body>
+</html>

@@ -1,8 +1,13 @@
 package com.eduflow.exception;
 
+import com.eduflow.application.ApplicationNotFoundException;
+import com.eduflow.application.DuplicateApplicationException;
+import com.eduflow.application.InvalidApplicationStatusTransitionException;
 import com.eduflow.document.DocumentNotFoundException;
 import com.eduflow.document.InvalidDocumentStatusTransitionException;
 import com.eduflow.document.storage.DocumentStorageException;
+import com.eduflow.university.CourseNotFoundException;
+import com.eduflow.university.UniversityNotFoundException;
 import com.eduflow.student.DuplicateStudentException;
 import com.eduflow.student.InvalidStudentStatusTransitionException;
 import com.eduflow.student.StudentNotFoundException;
@@ -12,6 +17,9 @@ import com.eduflow.tenant.DuplicateSlugException;
 import com.eduflow.tenant.InvalidTenantStatusTransitionException;
 import com.eduflow.tenant.TenantLimitExceededException;
 import com.eduflow.tenant.TenantNotFoundException;
+import com.eduflow.user.DuplicateStaffException;
+import com.eduflow.user.LastTenantAdminException;
+import com.eduflow.user.StaffNotFoundException;
 import com.eduflow.workflow.DuplicateWorkflowNameException;
 import com.eduflow.workflow.InvalidWorkflowGraphException;
 import com.eduflow.workflow.InvalidWorkflowTransitionException;
@@ -75,9 +83,24 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(StaffNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleStaffNotFound(
+            StaffNotFoundException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage(), request);
+    }
+
     @ExceptionHandler({WorkflowTemplateNotFoundException.class, StudentWorkflowNotFoundException.class,
             TaskNotFoundException.class})
     public ResponseEntity<ErrorResponse> handleWorkflowNotFound(
+            RuntimeException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler({UniversityNotFoundException.class, CourseNotFoundException.class,
+            ApplicationNotFoundException.class})
+    public ResponseEntity<ErrorResponse> handleCatalogNotFound(
             RuntimeException ex, HttpServletRequest request) {
 
         return build(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage(), request);
@@ -88,6 +111,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateStudentException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateStudent(
             DuplicateStudentException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.CONFLICT, CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DuplicateStaffException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateStaff(
+            DuplicateStaffException ex, HttpServletRequest request) {
 
         return build(HttpStatus.CONFLICT, CONFLICT, ex.getMessage(), request);
     }
@@ -113,6 +143,20 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, CONFLICT, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(DuplicateApplicationException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateApplication(
+            DuplicateApplicationException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.CONFLICT, CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidApplicationStatusTransitionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidApplicationStatusTransition(
+            InvalidApplicationStatusTransitionException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.CONFLICT, CONFLICT, ex.getMessage(), request);
+    }
+
     // ── 422 Unprocessable Entity ─────────────────────────────────────────────
 
     @ExceptionHandler(InvalidStudentStatusTransitionException.class)
@@ -132,6 +176,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidTenantStatusTransitionException.class)
     public ResponseEntity<ErrorResponse> handleInvalidTenantStatusTransition(
             InvalidTenantStatusTransitionException ex, HttpServletRequest request) {
+
+        return build(HttpStatus.UNPROCESSABLE_CONTENT, UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(LastTenantAdminException.class)
+    public ResponseEntity<ErrorResponse> handleLastTenantAdmin(
+            LastTenantAdminException ex, HttpServletRequest request) {
 
         return build(HttpStatus.UNPROCESSABLE_CONTENT, UNPROCESSABLE_ENTITY, ex.getMessage(), request);
     }

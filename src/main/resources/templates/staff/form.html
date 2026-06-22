@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<!--
+    Staff invite / edit form.
+    Plugs into the shared sidebar shell via fragments/layout.
+    Active nav: 'staff'
+-->
+<html th:replace="~{fragments/layout :: layout(${isEdit} ? ('Edit — ' + staffName) : 'Invite Staff',
+                                               ${isEdit} ? ('Staff / Edit / ' + staffName) : 'Staff / Invite',
+                                               'staff', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="content">
+
+    <div class="stack form-shell">
+
+        <!-- Back link -->
+        <a th:href="${isEdit} ? @{/staff/{id}(id=${staffId})} : @{/staff}"
+           class="eyebrow inline-link">
+            <i data-lucide="arrow-left" class="icon-sm"></i>
+            <span th:text="${isEdit} ? 'Back to staff member' : 'Back to staff'">Back</span>
+        </a>
+
+        <!-- Page header -->
+        <div class="page-head">
+            <div>
+                <h1 class="page-head__title"
+                    th:text="${isEdit} ? ('Edit ' + staffName) : 'Invite new staff member'">Staff form</h1>
+                <p class="page-head__sub"
+                   th:text="${isEdit} ? 'Update the profile and role assignment below.' :
+                                        'They will receive a link to set their password and activate their account.'">Subtitle</p>
+            </div>
+        </div>
+
+        <!-- Global error (e.g. duplicate email) — shown as a toast -->
+        <th:block th:replace="~{fragments/components :: toastMarkers(null, ${errorMessage})}"></th:block>
+
+        <!-- ── Form ──────────────────────────────────────────────────────────── -->
+        <form th:action="${isEdit} ? @{/staff/{id}/edit(id=${staffId})} : @{/staff/new}"
+              th:object="${staffForm}"
+              method="post"
+              novalidate>
+
+            <th:block th:replace="~{fragments/components :: csrfInput}"></th:block>
+
+            <div th:if="${#fields.hasErrors('*')}" class="flash flash--error validation-summary">
+                <i data-lucide="alert-triangle"></i>
+                <span>Please correct the highlighted fields and try again.</span>
+            </div>
+
+            <div class="card">
+
+                <!-- Section 1: Account -->
+                <div class="form-section">
+                    <div class="form-section__title">Account</div>
+                    <p class="form-section__hint">Login email and name for this staff member.</p>
+
+                    <div class="form-grid">
+                        <!-- Email: editable on invite, read-only on edit (it's the tenant-unique login key). -->
+                        <div class="field field--span2" th:if="${isEdit}">
+                            <label class="field__label" for="email">Email address</label>
+                            <input class="input" type="email" id="email" th:field="*{email}" readonly />
+                            <span class="field__hint">Email cannot be changed after invitation.</span>
+                        </div>
+                        <th:block th:unless="${isEdit}"
+                                  th:replace="~{fragments/forms :: field(field='email', label='Email address', type='email', required=true, maxlength=255, placeholder='e.g. jane.doe@example.com', span=true)}"></th:block>
+
+                        <th:block th:replace="~{fragments/forms :: field(field='firstName', label='First name', maxlength=100, placeholder='e.g. Jane')}"></th:block>
+                        <th:block th:replace="~{fragments/forms :: field(field='lastName', label='Last name', maxlength=100, placeholder='e.g. Doe')}"></th:block>
+                    </div>
+                </div>
+
+                <!-- Section 2: Roles -->
+                <div class="form-section">
+                    <div class="form-section__title">Roles</div>
+                    <p class="form-section__hint">Select one or more roles. Roles govern what this staff member can access.</p>
+
+                    <div class="check-grid">
+                        <label class="check-card" th:each="role : ${assignableRoles}">
+                            <input type="checkbox" th:field="*{roleNames}" th:value="${role.name()}" />
+                            <span class="check-card__body">
+                                <span class="check-card__title" th:text="${role.label()}">Role</span>
+                                <span class="check-card__sub" th:if="${role.description()}"
+                                      th:text="${role.description()}">Description</span>
+                            </span>
+                        </label>
+                    </div>
+                    <span class="field__error" th:if="${#fields.hasErrors('roleNames')}"
+                          th:errors="*{roleNames}">Select at least one role</span>
+                </div>
+
+                <!-- Actions -->
+                <div class="form-actions">
+                    <a class="btn btn--ghost"
+                       th:href="${isEdit} ? @{/staff/{id}(id=${staffId})} : @{/staff}">Cancel</a>
+                    <button class="btn btn--primary" type="submit">
+                        <i data-lucide="check"></i>
+                        <span th:text="${isEdit} ? 'Save changes' : 'Send invite'">Save</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+</th:block>
+</body>
+</html>
